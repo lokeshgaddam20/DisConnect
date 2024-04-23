@@ -11,21 +11,7 @@ from novu.dto.event import InputEventDto
 
 from firebase_admin import credentials, initialize_app,firestore
 load_dotenv()
-cred = credentials.Certificate({
-  "type": "service_account",
-  "project_id": "sahayaa-9bc84",
-  "private_key_id": "3197d5f6ee2b638c96ae0f62c73d35e71d70d50a",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCT1kGju9rTeSqj\nCAvAbiSL7Ju7P3x1RwgP5sjuZ4r0DwXE2Q1g4t+ho1XlSQPySHRxps376S7W+OC/\nbcScQnV+73lCkXyXd0ZadHqnDxH3nLvGf2p1r7hbyya9N6A+v/5qoYgvmz+lxE10\njiIw9sfC1aM5GMbpOS0oqW3FVbpytFfweoCJVQOfewpgbI/RuMEVUvXvhwiCnBIt\nRShX4l/+glD22idBr38b6bxYQihCnzeycg35gekKZPzshjwxGoxiGxXoHEZDSIcS\nAVsUb0XalAO1tbFmfPpEDKt0QKmQ0ytgktr0RcReH9eWCPNzoT7XFqfIkRodL/Q3\nGparN6D5AgMBAAECgf9TJiQhfe4Zijr7jJy6IhxzMySrIcZwPhwx1WamzLl6oOov\ngoFyB33yGehkGCmOSg6mCERn57SJdHiewLAYCHPNUSOQ2AM35qiuzOnoPgb9AUpx\nFurNW708cfvbd+pXYMiexhgIIGmE1iePqlNe9sNOuUTJ6iISvKCJnjONf0MT/+qu\nfmBvA5bVZsIR4TOXKGcHGRgcPhn2Y0XyEn3lv9r27pmeuIxJ0Ti6iepwdz2aPnvn\nOytvGbkx6fwnPjawQTthmN8t6pcfI2uplW5O7My5c8JrjfFq6hxORQQj6QDzx1lX\nQGgOZbtcKvQ8xPM6636f0N0C6elOEICi20hS7aECgYEAyMYYgnuZaIhs0j9WNQub\nyqtlSA8HeWrTSFtigki4kuM2vWqEWiCIcx261CHsT1aD9npYVGjABuqbO9OdNrDy\nVIAIcmMN5YkGf5/i7leag8rglUGZXZomwsd+32cNPunqlHYv7EHFLqJq6rS+CDo+\n+O+NxRXYkj4xHH9fj+/m8iECgYEAvICAQxQTbO/PKUpA9nJnjN0mCStwC5R1IHIH\nAqpOEkOBGKEGmyhbDxJwPKE5DjaieNbR3COy3Hy86iRh77gSCV15lODsUJvsKwNi\ncDBuiA/L24fTeiXVUI3hNUifGNCIr8q5Hk2CBgCh67DEcvdvjcI9BhID6PLRc8Vq\nIEPeA9kCgYEAiIKoh4+ibwDTfOCzrL2H3/VJmAUf/94yajA4en0XgkgbIA8cjmsw\nW5ULQtEN66PXde8Zv8q5RfqeMb9gVZ9aJToohB31hOv2DzCXC5dk59c5fEJuFMaL\nNESQbzWSPASwCuGRFAJkH6EvMQZTbySrTHcU3bxM1KKUodu5DhT/4gECgYEAg3OA\n/kYTvdYFux+C6dmiCIN3sNFP02N1wmiCJwOoaegVMJ2qQ60CwyHyjvVHGnhTGL2F\nn2RtqIB8JTO18DuGqG09CetIIHZ7XQuBLAc6LTwGx1KS0Q1tEj2+nS/FcsKJbz2J\nlm4qjBEI2ZlthVazvkGD2KXbgClEkt1KQrHRMxECgYAOTK1M9iQ/9uNQIOyc1Ias\ncvfT1yvyDFuKSTUAWt7dajvvq4Vy1NTwgMGfCo+KfKHoUFK13Uq9x048IzW+IfFM\nn6wpJX/He1Syi/PvqeXESzawybMdM7cs3jcl4+h8X52AmohH298ysHM5vAyjoVYw\nl5mdfwFMaM/2th88C+T+Iw==\n-----END PRIVATE KEY-----\n",
-  "client_email": "firebase-adminsdk-s1bgs@sahayaa-9bc84.iam.gserviceaccount.com",
-  "client_id": "104623286205366640503",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-s1bgs%40sahayaa-9bc84.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
-)
-# cred = credentials.Certificate(r'apps\flask\firebase.json')
+cred = credentials.Certificate(r'apps/flask/firebase.json')
 firebase_app = initialize_app(cred)
 db=firestore.client()
 
