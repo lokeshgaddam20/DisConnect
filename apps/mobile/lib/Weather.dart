@@ -2,11 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:convert';
-import 'package:flutter_config/flutter_config.dart';
-import 'package:http/http.dart' as http;
-// import 'package:flutter/services.dart' show rootBundle;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:geolocator/geolocator.dart';
 
 class WeatherScreen extends StatefulWidget {
   @override
@@ -14,85 +9,17 @@ class WeatherScreen extends StatefulWidget {
 }
 
 class _WeatherScreenState extends State<WeatherScreen> {
-  late Map<String, dynamic> weatherData = {};
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadWeatherData();
-    _initializeNotifications();
-    _startPeriodicNotifications();
-  }
-
-  Future<void> _initializeNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    final InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-  }
-
-  // Future<void> _loadWeatherData() async {
-  //   final jsonString = await rootBundle.loadString('assets/weatherData.json');
-  //   final jsonData = json.decode(jsonString);
-  //   setState(() {
-  //     weatherData = jsonData;
-  //   });
-
-  Future<void> _loadWeatherData() async {
-    Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
-    final response = await http.get(Uri.parse(FlutterConfig.get('BACKEND_URL') +
-        '/api/gemini?city=' +
-        position.latitude.toString() +
-        ',' +
-        position.longitude.toString()));
-
-    if (response.statusCode == 200) {
-      final jsonData = json.decode(response.body);
-
-      setState(() {
-        weatherData = jsonData;
-      });
-    } else {
-      _loadWeatherData();
-    }
-  }
-
-  Future<void> _showNotification() async {
-    final color = weatherData['Color'];
-    final alert = weatherData['Alert'];
-    final time = weatherData['Time'];
-
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'weather_channel',
-      'Weather Notifications',
-      importance: Importance.max,
-      priority: Priority.high,
-      ticker: 'ticker',
-      styleInformation: BigTextStyleInformation(''),
-    );
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
-    await flutterLocalNotificationsPlugin.show(
-      1,
-      '$color Alert',
-      '$alert in $time hrs. Click to know more.',
-      platformChannelSpecifics,
-      payload: 'Weather',
-    );
-  }
-
-  Future<void> _startPeriodicNotifications() async {
-    await Future.delayed(Duration(minutes: 20));
-    if (weatherData['Color'].toString().toLowerCase() != 'white') {
-      _showNotification();
-    }
-    _startPeriodicNotifications();
-  }
+  late Map<String, dynamic> weatherData = {
+    "Color": "red",
+    "weather": "Thunderstorm",
+    "Alert": "Severe Thunderstorm Warning",
+    "Time": "4",
+    "Precautions": [
+      "There will be severe water logging in your area. Avoid going out if possible and get all supplies beforehand.",
+      "About 2-3 inches of rain are expected. Be prepared for possible flooding and place all valuables in a safe place.",
+      "Temperatures will reach up to a minimum of 21°C. So keep yourself warm and dry."
+    ]
+  };
 
   IconData _getWeatherIcon(String weather) {
     switch (weather.toLowerCase()) {
@@ -166,76 +93,75 @@ class _WeatherScreenState extends State<WeatherScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
-      body: weatherData.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: _getColor(weatherData['Color']),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  Icon(
-                    _getWeatherIcon(weatherData['weather']),
-                    size: 150,
-                  ),
-                  const SizedBox(height: 40),
-                  Text(
-                    weatherData['weather'],
-                    style: TextStyle(
-                      fontFamily: GoogleFonts.kanit().fontFamily,
-                      fontSize: 35,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  Container(
-                    width: 250,
-                    height: 35,
-                    decoration: ShapeDecoration(
-                      color: Color(0xFFD9D9D9),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'In ${weatherData["Time"]} hrs',
-                        style: GoogleFonts.kanit(
-                          textStyle: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: _buildPrecautionItems(
-                                weatherData['Precautions']),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _getColor(weatherData['Color']),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
+            const SizedBox(height: 40),
+            Icon(
+              _getWeatherIcon(weatherData['weather']),
+              size: 150,
+            ),
+            const SizedBox(height: 40),
+            Text(
+              weatherData['weather'],
+              style: TextStyle(
+                fontFamily: GoogleFonts.kanit().fontFamily,
+                fontSize: 35,
+              ),
+            ),
+            const SizedBox(height: 30),
+            Container(
+              width: 250,
+              height: 35,
+              decoration: ShapeDecoration(
+                color: Color(0xFFD9D9D9),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  'In ${weatherData["Time"]} hrs',
+                  style: GoogleFonts.kanit(
+                    textStyle: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 40),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _buildPrecautionItems(
+                        weatherData['Precautions'],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
