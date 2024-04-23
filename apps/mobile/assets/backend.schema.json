@@ -1,0 +1,79 @@
+{
+    "need" : [
+        {
+            "type" : "hospital",
+            "location" : {
+                "lat" : 12.978806,
+                "lng" : 80.221249
+            },
+            "phone" : "415-555-5555",
+            "help" : ["medical"]
+        },
+        {
+            "type" : "hospital",
+            "location" : {
+                "lat" : 12.6612733,
+                "lng" : 80.1892617
+            },
+            "phone" : "415-555-5555",
+            "help" : ["medical"]
+        },
+        {
+            "type" : "reliefCamp",
+            "location" : {
+                "lat" : 12.970462,
+                "lng" : 80.220511
+            },
+            "phone" : "415-555-5555",
+            "help" : ["food", "shelter"]
+        },
+        {
+            "type" : "supplies",
+            "location" : {
+                "lat" : 12.991336,
+                "lng" : 80.213011
+            },
+            "phone" : "415-555-5555",
+            "help" : ["food", "water", "clothing"]
+        },
+        {
+            "type" : "safeSpace",
+            "location" : {
+                "lat" : 12.977344,
+                "lng" : 80.220393
+            },
+            "phone" : "415-555-5555",
+            "help" : ["shelter"]
+        }
+    ],
+
+    "give": [
+        {    
+            "type" : "victim",
+            "location" : {
+                "lat" : 12.980632,
+                "lng" : 80.213296
+            },
+            "phone" : "415-555-5555",
+            "help" : ["food"]
+        },
+        {    
+            "type" : "volunteer",
+            "location" : {
+                "lat" : 12.978105,
+                "lng" : 80.228244
+            },
+            "phone" : "415-555-5555",
+            "help" : ["food"]
+        },
+        {
+            "type" : "food",
+            "location" : {
+                "lat" : 12.973719,
+                "lng" : 80.223965
+            },
+            "phone" : "415-555-5555",
+            "help" : ["food"]
+        }
+    ]
+}

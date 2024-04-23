@@ -1,0 +1,11 @@
+{
+    "Color": "red",
+    "weather": "Thunderstorm",
+    "Alert": "Severe Thunderstorm Warning",
+    "Time":"4",
+    "Precautions": [
+     "There will be severe water logging in your area. Avoid going out if possible and get all supplies beforehand.",
+     "About 2-3 inches of rain are expected. Be prepared for possible flooding and plce all valuables in a safe place.",
+     "Temperatures will reach upto a minimum of 21° C. So keep yourself warm and dry."
+    ]
+   }
