@@ -18,6 +18,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Home extends StatefulWidget {
   @override
   _HomeState createState() => _HomeState();
@@ -198,6 +200,61 @@ class _HomeState extends State<Home> {
     });
   }
 
+  // Function to update user selections in Firestore
+  void updateUserSelections(List<Map<String, dynamic>> userSelections) {
+    // Reference to the Firestore collection
+    CollectionReference userSelectionsCollection =
+        FirebaseFirestore.instance.collection('userSelections');
+
+    // Convert userSelections to a format suitable for Firestore
+    List<Map<String, dynamic>> firestoreData = [];
+
+    for (var selection in userSelections) {
+      // Convert each selection to a Firestore document
+      Map<String, dynamic> firestoreDoc = {
+        'location': selection['location'],
+        'selectedOptions': selection['selectedOptions'],
+        // Add any additional fields you want to store
+      };
+
+      firestoreData.add(firestoreDoc);
+    }
+
+    // Update Firestore with the new data
+    userSelectionsCollection
+        .doc('unique_document_id') // Use a unique document ID
+        .set({'selections': firestoreData})
+        .then((value) => print("User selections updated"))
+        .catchError(
+            (error) => print("Failed to update user selections: $error"));
+  }
+
+  // Function to handle the submission of user selections
+  void submitUserSelections() async {
+    // Get the selected options
+    List<dynamic> selectedHelpDynamic = userSelections
+        .map((selection) => selection['selectedOptions'])
+        .expand((options) => options)
+        .toList();
+
+    // Ensure that all items in selectedHelpDynamic are strings
+    List<String> selectedHelp = selectedHelpDynamic
+        .whereType<String>()
+        .toList(); // This will filter out non-string items
+
+    // Save user's location and selected options in the userSelections list
+    userSelections.add({
+      'location': {
+        'latitude': currentLocation.latitude,
+        'longitude': currentLocation.longitude
+      },
+      'selectedOptions': selectedHelp,
+    });
+
+    // Update user selections in Firestore
+    updateUserSelections(userSelections);
+  }
+
   List<Map<String, dynamic>> filtersNeedHelp = [
     {"type": "Hospital", "icon": FontAwesomeIcons.truckMedical},
     {"type": "Relief Camp", "icon": FontAwesomeIcons.tent},
@@ -265,7 +322,7 @@ class _HomeState extends State<Home> {
   void onVolunteerOptionClicked() {
     print("Volunteer option clicked"); // Add this line for debugging
 
-    // Filter userSelections to get entries where user has volunteered
+    // Filter ctions tuserSeleo get entries where user has volunteered
     List<Map<String, dynamic>> volunteerSelections =
         userSelections.where((selection) {
       return selection['selectedOptions'].contains('Volunteer');
@@ -660,7 +717,7 @@ class _HomeState extends State<Home> {
     Map<String, IconData> helpIcons = {
       'Volunteer': Icons.volunteer_activism,
       'Donate': Icons.monetization_on,
-      'Provide Shelter': Icons.house,
+      'Safe Space': Icons.house,
       'Offer Food': Icons.food_bank,
       'Medical': Icons.medical_services,
       'Shelter': Icons.house,
@@ -1023,6 +1080,7 @@ class _HomeState extends State<Home> {
     return Scaffold(
       body: Stack(
         children: [
+          // Google Map widget
           locationLoaded
               ? GoogleMap(
                   myLocationEnabled: true,
@@ -1035,6 +1093,8 @@ class _HomeState extends State<Home> {
                   markers: Set<Marker>.of(markers),
                 )
               : Center(child: CircularProgressIndicator()),
+
+          // Column containing top floating bar, filter bar, and offline widget
           Column(
             children: [
               _buildTopFloatingBar(),
@@ -1042,9 +1102,25 @@ class _HomeState extends State<Home> {
               isOffline ? _buildOfflineWidget() : Container(),
             ],
           ),
+
+          // Recenter button
           recenterBtn(_controllerCompleter, currentLocation),
+
+          // Action button
           actionBtn(isHelping, currentLocation, selectedFilter),
+
+          // SOS Button
           SOSButton(isHelping: isHelping == true),
+
+          // Button to submit user selections to Firestore
+          Positioned(
+            bottom: 20.0,
+            left: 20.0,
+            child: ElevatedButton(
+              onPressed: submitUserSelections,
+              child: Text('Submit User Selections to Firestore'),
+            ),
+          ),
         ],
       ),
     );
