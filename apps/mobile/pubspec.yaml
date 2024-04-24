@@ -28,6 +28,11 @@ dependencies:
   http:
   flutter_local_notifications:
   timezone:
+  dash_chat_2: 
+  firebase_core: 
+  firebase_auth:
+  cloud_firestore:
+  uuid:
 
 
 dev_dependencies:
@@ -51,8 +56,20 @@ flutter:
     - assets/weatherData.json
 
 flutter_launcher_icons:
-  android: 'launcher_icon'
+  android: "launcher_icon"
   ios: true
   adaptive_icon_background: "#ffffff" 
   adaptive_icon_foreground: "assets/icon/icon.png"
   image_path: "assets/icon/icon.png"
+  web:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    background_color: "#ffffff"
+    theme_color: "#ffffff"
+  windows:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/icon/icon.png"

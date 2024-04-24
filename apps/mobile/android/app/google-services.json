@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "319641832184",
+    "firebase_url": "https://sahayaa-9bc84-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "sahayaa-9bc84",
+    "storage_bucket": "sahayaa-9bc84.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:319641832184:android:63c4cd299fb67c3c64090d",
+        "android_client_info": {
+          "package_name": "com.example.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAhndOn7l1koHhKQl5UWfEBGQxker8J34"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

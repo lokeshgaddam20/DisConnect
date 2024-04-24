@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_config/flutter_config.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:Sahaya/firebase_options.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'Family.dart';
@@ -36,11 +39,11 @@ class CustomNavigationBar extends StatelessWidget {
           selectedIcon: Icon(Icons.cloud),
           label: 'Weather',
         ),
-        NavigationDestination(
-          icon: Icon(Icons.cloud_outlined),
-          selectedIcon: Icon(Icons.family_restroom),
-          label: 'Family',
-        ),
+        // NavigationDestination(
+        //   icon: Icon(Icons.family_restroom_outlined),
+        //   selectedIcon: Icon(Icons.family_restroom),
+        //   label: 'Family',
+        // ),
         //<------------------ADD MORE OPTIONS AS NEEDED----------------->
       ],
     );
@@ -49,11 +52,11 @@ class CustomNavigationBar extends StatelessWidget {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FlutterConfig.loadEnvVariables();
   final prefs = await SharedPreferences.getInstance();
   var phoneNumber = prefs.getString('phoneNumber');
   bool permissionsGranted = prefs.getBool('permissionsGranted') ?? false;
-
   runApp(
       MyApp(phoneNumber: phoneNumber, permissionsGranted: permissionsGranted));
 }
@@ -75,7 +78,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sahaya',
+      title: 'DisConnect',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -86,7 +89,7 @@ class _MyAppState extends State<MyApp> {
           children: [
             widget.phoneNumber == null ? GetPhoneNumber() : Home(),
             widget.permissionsGranted ? WeatherScreen() : GetPermissions(),
-            widget.permissionsGranted ? FamilySpace() : GetPermissions(),
+            // widget.permissionsGranted ? FamilySpaceScreen() : GetPermissions(),
             //<------------------ADD MORE OPTIONS AS NEEDED----------------->
           ],
         ),

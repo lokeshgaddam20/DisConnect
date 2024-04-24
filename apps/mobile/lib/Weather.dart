@@ -31,7 +31,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
       case 'hail':
         return FontAwesomeIcons.cloudMeatball;
       default:
-        return FontAwesomeIcons.questionCircle;
+        return FontAwesomeIcons.circleQuestion;
     }
   }
 
@@ -102,9 +102,9 @@ class _WeatherScreenState extends State<WeatherScreen> {
         print(
             'Weather condition received: $weather'); // Add this line for debugging
 
-        int time = jsonData['dt'];
-// Convert time to hours
-        int hours = (time ~/ 3600); // Use integer division to avoid decimals
+        // int time = jsonData['dt'];
+        // Convert time to hours
+        // int hours = (time ~/ 3600); // Use integer division to avoid decimals
 
         // Dynamically set precautions based on the weather condition
         List<String> precautions = [];

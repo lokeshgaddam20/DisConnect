@@ -27,14 +27,13 @@ class _GetPermissionsState extends State<GetPermissions> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage("assets/background/main.png"),
-          fit: BoxFit.cover,
-          )
-      ),
+          image: DecorationImage(
+        image: AssetImage("assets/background/main.png"),
+        fit: BoxFit.cover,
+      )),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body:Padding(
+        body: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -42,14 +41,14 @@ class _GetPermissionsState extends State<GetPermissions> {
             children: <Widget>[
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 10),
-                child:Text(
+                child: Text(
                   'We need your permission to continue',
                   style: GoogleFonts.getFont(
                     'Lexend',
-                    fontSize: 22, 
+                    fontSize: 22,
                     fontWeight: FontWeight.w500,
                     color: Colors.black,
-                  ), 
+                  ),
                 ),
               ),
               SizedBox(height: 20),
@@ -93,15 +92,12 @@ class _GetPermissionsState extends State<GetPermissions> {
                   //       }
                   //     : null,
                   onPressed: locationPermissionGranted && smsPermissionGranted
-                    ? _updatePermissionStatus
-                    : null,
+                      ? _updatePermissionStatus
+                      : null,
                   child: Text(
                     'Submit',
-                    style: GoogleFonts.getFont(
-                      'Kanit',
-                      fontSize: 18, 
-                      color: Colors.white
-                    ), 
+                    style: GoogleFonts.getFont('Kanit',
+                        fontSize: 18, color: Colors.white),
                   ),
                 ),
               ),

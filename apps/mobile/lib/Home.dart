@@ -18,6 +18,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Home extends StatefulWidget {
   @override
   _HomeState createState() => _HomeState();
@@ -167,29 +169,90 @@ class SOSButton extends StatelessWidget {
 
 class _HomeState extends State<Home> {
   Completer<GoogleMapController> _controllerCompleter = Completer();
-  late GoogleMapController mapController;
-  late LatLng currentLocation = LatLng(0, 0);
+
+  List<Map<String, dynamic>> userSelections = [];
+  List<Marker> markers = [];
+
+  late LatLng currentLocation;
   bool locationLoaded = false;
   CameraPosition currentCameraPosition =
       CameraPosition(target: LatLng(0, 0), zoom: 0);
+
+  String selectedFilter = ''; // Track selected filter option
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+    Timer.periodic(Duration(seconds: 5), (timer) {
+      _checkConnectivity();
+    });
+  }
+
   String _mapStyle = '';
   bool isHelping = false;
   bool isOffline = false;
-
-  late List<Marker> _hospitals = [];
-  late List<Marker> _reliefCamps = [];
-  late List<Marker> _supplies = [];
-  late List<Marker> _shelters = [];
-  late List<Marker> _victims = [];
-
-  late List<Marker> _volunteers = [];
-  late List<Marker> _food = [];
 
   Future<void> _checkConnectivity() async {
     final isConnected = await InternetConnectionChecker().hasConnection;
     setState(() {
       isOffline = !isConnected;
     });
+  }
+
+  // Function to update user selections in Firestore
+  void updateUserSelections(List<Map<String, dynamic>> userSelections) {
+    // Reference to the Firestore collection
+    CollectionReference userSelectionsCollection =
+        FirebaseFirestore.instance.collection('userSelections');
+
+    // Convert userSelections to a format suitable for Firestore
+    List<Map<String, dynamic>> firestoreData = [];
+
+    for (var selection in userSelections) {
+      // Convert each selection to a Firestore document
+      Map<String, dynamic> firestoreDoc = {
+        'location': selection['location'],
+        'selectedOptions': selection['selectedOptions'],
+        // Add any additional fields you want to store
+      };
+
+      firestoreData.add(firestoreDoc);
+    }
+
+    // Update Firestore with the new data
+    userSelectionsCollection
+        .doc('unique_document_id') // Use a unique document ID
+        .set({'selections': firestoreData})
+        .then((value) => print("User selections updated"))
+        .catchError(
+            (error) => print("Failed to update user selections: $error"));
+  }
+
+  // Function to handle the submission of user selections
+  void submitUserSelections() async {
+    // Get the selected options
+    List<dynamic> selectedHelpDynamic = userSelections
+        .map((selection) => selection['selectedOptions'])
+        .expand((options) => options)
+        .toList();
+
+    // Ensure that all items in selectedHelpDynamic are strings
+    List<String> selectedHelp = selectedHelpDynamic
+        .whereType<String>()
+        .toList(); // This will filter out non-string items
+
+    // Save user's location and selected options in the userSelections list
+    userSelections.add({
+      'location': {
+        'latitude': currentLocation.latitude,
+        'longitude': currentLocation.longitude
+      },
+      'selectedOptions': selectedHelp,
+    });
+
+    // Update user selections in Firestore
+    updateUserSelections(userSelections);
   }
 
   List<Map<String, dynamic>> filtersNeedHelp = [
@@ -207,20 +270,6 @@ class _HomeState extends State<Home> {
     {"type": "Shelter", "icon": FontAwesomeIcons.house},
     {"type": "Food", "icon": FontAwesomeIcons.utensils},
   ];
-
-  String selectedFilter = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _getCurrentLocation();
-    _loadMapStyle();
-    _loadModePreference();
-    _loadJsonData();
-    Timer.periodic(Duration(seconds: 5), (timer) {
-      _checkConnectivity();
-    });
-  }
 
   void _loadMapStyle() async {
     _mapStyle = await rootBundle.loadString('assets/maps/map_style.json');
@@ -253,150 +302,63 @@ class _HomeState extends State<Home> {
   }
 
   void _processJsonData(Map<String, dynamic> data) async {
-    List<Marker> hospitals = [];
-    List<Marker> reliefCamps = [];
-    List<Marker> supplies = [];
-    List<Marker> shelters = [];
-    List<Marker> volunteers = [];
+    // Clear existing volunteer markers
+    _volunteerMarkers.clear();
 
-    List<Marker> victims = [];
-    List<Marker> food = [];
+    for (var selection in userSelections) {
+      if (selection['selectedOptions'].contains('Volunteer')) {
+        double latitude = selection['location']['latitude'];
+        double longitude = selection['location']['longitude'];
+        LatLng location = LatLng(latitude, longitude);
 
-    BitmapDescriptor foodMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/food.png',
-    );
-    BitmapDescriptor hospitalMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/hospital.png',
-    );
-    BitmapDescriptor reliefCampMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/reliefCamp.png',
-    );
-    BitmapDescriptor safeSpaceMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/safeSpace.png',
-    );
-    BitmapDescriptor suppliesMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/supplies.png',
-    );
-    BitmapDescriptor victimMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/victim.png',
-    );
-    BitmapDescriptor volunteerMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/volunteer.png',
-    );
-    BitmapDescriptor waterMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/water.png',
-    );
-
-    for (var item in data['need']) {
-      LatLng location =
-          LatLng(item['location']['lat'], item['location']['lng']);
-      Marker marker = Marker(
-          markerId: MarkerId(location.toString()),
-          anchor: Offset(0.5, 0.5),
-          position: location,
-          icon: (item['type'] == 'hospital')
-              ? hospitalMarker
-              : (item['type'] == 'reliefCamp')
-                  ? reliefCampMarker
-                  : (item['type'] == 'supplies')
-                      ? suppliesMarker
-                      : (item['type'] == 'safeSpace')
-                          ? safeSpaceMarker
-                          : (item['type'] == 'volunteer')
-                              ? volunteerMarker
-                              : (item['type'] == 'victim')
-                                  ? victimMarker
-                                  : (item['type'] == 'food')
-                                      ? foodMarker
-                                      : (item['type'] == 'water')
-                                          ? waterMarker
-                                          : BitmapDescriptor.defaultMarker,
-          onTap: () {
-            _showLocationDetails(context, item);
-          });
-      // Future marker = _createMarker(item['type'], location.latitude, location.longitude, item);
-
-      switch (item['type']) {
-        case 'hospital':
-          hospitals.add(marker);
-          break;
-        case 'reliefCamp':
-          reliefCamps.add(marker);
-          break;
-        case 'supplies':
-          supplies.add(marker);
-          break;
-        case 'safeSpace':
-          shelters.add(marker);
-          break;
-        case 'volunteer':
-          volunteers.add(marker);
-          break;
+        // Add volunteer marker to _volunteerMarkers list
+        _addMarker(location);
       }
     }
+  }
 
-    for (var item in data['give']) {
-      LatLng location =
-          LatLng(item['location']['lat'], item['location']['lng']);
-      // Marker marker = await _createMarker(item['type'], location.latitude, location.longitude, item);
+  List<Marker> _volunteerMarkers = [];
 
-      Marker marker = Marker(
-          markerId: MarkerId(location.toString()),
-          anchor: Offset(0.5, 0.5),
-          icon: (item['type'] == 'hospital')
-              ? hospitalMarker
-              : (item['type'] == 'reliefCamp')
-                  ? reliefCampMarker
-                  : (item['type'] == 'supplies')
-                      ? suppliesMarker
-                      : (item['type'] == 'safeSpace')
-                          ? safeSpaceMarker
-                          : (item['type'] == 'volunteer')
-                              ? volunteerMarker
-                              : (item['type'] == 'victim')
-                                  ? victimMarker
-                                  : (item['type'] == 'food')
-                                      ? foodMarker
-                                      : (item['type'] == 'water')
-                                          ? waterMarker
-                                          : BitmapDescriptor.defaultMarker,
-          position: location,
-          onTap: () {
-            _showLocationDetails(context, item);
-          });
+  void onVolunteerOptionClicked() {
+    print("Volunteer option clicked"); // Add this line for debugging
 
-      switch (item['type']) {
-        case 'victim':
-          victims.add(marker);
-          break;
-        case 'volunteer':
-          volunteers.add(marker);
-          break;
-        case 'food':
-          food.add(marker);
-          break;
-      }
+    // Filter ctions tuserSeleo get entries where user has volunteered
+    List<Map<String, dynamic>> volunteerSelections =
+        userSelections.where((selection) {
+      return selection['selectedOptions'].contains('Volunteer');
+    }).toList();
+
+    // Extract coordinates and add markers to the map
+    for (var selection in volunteerSelections) {
+      double latitude = selection['location']['latitude'];
+      double longitude = selection['location']['longitude'];
+      LatLng location = LatLng(latitude, longitude);
+
+      // Add marker to the map
+      _addMarker(location);
     }
+  }
 
+  // Method to add marker to the map
+  void _addMarker(LatLng location) {
+    // Create marker
+    Marker marker = Marker(
+      markerId: MarkerId(location.toString()),
+      position: location,
+      // Add custom icon if needed
+      // icon: BitmapDescriptor.defaultMarker,
+      onTap: () {
+        // Handle marker tap event if needed
+      },
+    );
+
+    // Update the list of markers
     setState(() {
-      _hospitals = hospitals;
-      _reliefCamps = reliefCamps;
-      _supplies = supplies;
-      _shelters = shelters;
-      _victims = victims;
-      _volunteers = volunteers;
-      _food = food;
+      _volunteerMarkers.add(marker);
     });
   }
 
+  // Other existing methods...
   void _showLocationDetails(
       BuildContext context, Map<String, dynamic> locationDetails) async {
     final double startLatitude = currentLocation.latitude;
@@ -560,20 +522,55 @@ class _HomeState extends State<Home> {
   }
 
   void _getCurrentLocation() async {
-    var position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
-    setState(() {
-      currentLocation = LatLng(position.latitude, position.longitude);
-      locationLoaded = true;
-      currentCameraPosition =
-          CameraPosition(target: currentLocation, zoom: 15.0);
-    });
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      setState(() {
+        currentLocation = LatLng(position.latitude, position.longitude);
+        locationLoaded = true;
+        currentCameraPosition =
+            CameraPosition(target: currentLocation, zoom: 15.0);
+      });
+    } catch (e) {
+      print("Error getting current location: $e");
+      // Handle error or provide a default location
+    }
   }
 
   void _onMapCreated(GoogleMapController controller) {
     _controllerCompleter.complete(controller);
-    mapController = controller;
-    mapController.setMapStyle(_mapStyle);
+    _updateMarkers();
+  }
+
+  Future<void> _updateMarkers() async {
+    final GoogleMapController controller = await _controllerCompleter.future;
+
+    if (selectedFilter.isNotEmpty) {
+      // Clear existing markers
+      markers.clear();
+
+      for (var selection in userSelections) {
+        if (selection['selectedOptions'].contains(selectedFilter)) {
+          double latitude = selection['location']['latitude'];
+          double longitude = selection['location']['longitude'];
+          LatLng location = LatLng(latitude, longitude);
+
+          // Create marker options
+          final Marker marker = Marker(
+            markerId: MarkerId('marker_${markers.length}'), // Unique marker id
+            position: location,
+            // Add other properties like icon, info window, etc.
+          );
+
+          // Add marker to the list
+          markers.add(marker);
+        }
+      }
+
+      // Update markers on the map
+      setState(() {}); // Trigger rebuild to update markers
+    }
   }
 
   void _loadModePreference() async {
@@ -600,40 +597,6 @@ class _HomeState extends State<Home> {
     await Future.delayed(Duration(minutes: 1));
     smsStream.isEmpty ? print('No messages') : print('Messages found');
     return messages;
-  }
-
-  Set<Marker> _getMarkersForMap() {
-    Set<Marker> markers = {};
-
-    if (!isHelping) {
-      if (selectedFilter.isEmpty || selectedFilter == "Hospital") {
-        markers.addAll(_hospitals);
-      }
-      if (selectedFilter.isEmpty || selectedFilter == "Relief Camp") {
-        markers.addAll(_reliefCamps);
-      }
-      if (selectedFilter.isEmpty || selectedFilter == "Supplies") {
-        markers.addAll(_supplies);
-      }
-      if (selectedFilter.isEmpty || selectedFilter == "Safe Space") {
-        markers.addAll(_shelters);
-      }
-      if (selectedFilter.isEmpty || selectedFilter == "Volunteer") {
-        markers.addAll(_volunteers);
-      }
-    } else {
-      if (selectedFilter.isEmpty || selectedFilter == "Victim") {
-        markers.addAll(_victims);
-      }
-      if (selectedFilter.isEmpty || selectedFilter == "Volunteer") {
-        markers.addAll(_volunteers);
-      }
-      if (selectedFilter.isEmpty || selectedFilter == "Food") {
-        markers.addAll(_food);
-      }
-    }
-
-    return markers;
   }
 
   Map<String, dynamic> _combineJsonData(List<String> messages) {
@@ -754,7 +717,7 @@ class _HomeState extends State<Home> {
     Map<String, IconData> helpIcons = {
       'Volunteer': Icons.volunteer_activism,
       'Donate': Icons.monetization_on,
-      'Provide Shelter': Icons.house,
+      'Safe Space': Icons.house,
       'Offer Food': Icons.food_bank,
       'Medical': Icons.medical_services,
       'Shelter': Icons.house,
@@ -869,20 +832,31 @@ class _HomeState extends State<Home> {
                     ),
                     onPressed: isAnyOptionSelected()
                         ? () async {
+                            // Get the selected options
                             List<String> selectedHelp = helpOptions.entries
                                 .where((entry) => entry.value)
                                 .map((entry) => entry.key)
                                 .toList();
-                            // Handle the submission logic here
-                            print('Phone Number: $phoneNumber');
-                            print('Selected Help Options: $selectedHelp');
-                            makePostRequest(
-                                selectedHelp,
-                                isHelping,
-                                currentLocation.latitude,
-                                currentLocation.longitude);
-                            Navigator.pop(
-                                context); // Close the modal bottom sheet
+
+                            // Save user's location and selected options in ArrayList
+                            userSelections.add({
+                              'location': {
+                                'latitude': currentLocation.latitude,
+                                'longitude': currentLocation.longitude
+                              },
+                              'selectedOptions': selectedHelp,
+                            });
+
+                            // If phoneNumber is available and not empty, include it in the data
+                            if (phoneNumber != null && phoneNumber.isNotEmpty) {
+                              userSelections.last['phoneNumber'] = phoneNumber;
+                            }
+
+                            // Perform any necessary actions with the collected data
+                            print('User Selections: $userSelections');
+
+                            // Close the modal bottom sheet and reload the map markers
+                            Navigator.pop(context);
                             reloadMapMarkers();
                           }
                         : null,
@@ -988,16 +962,17 @@ class _HomeState extends State<Home> {
   }
 
   Widget _buildFilterBar() {
-    List<Map<String, dynamic>> currentFilters =
-        isHelping ? filtersGiveHelp : filtersNeedHelp;
+    List<Map<String, dynamic>> filters =
+        filtersNeedHelp; // Assuming this list is defined
+
     return Container(
       height: 60,
       padding: EdgeInsets.symmetric(horizontal: 10),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: currentFilters.length,
+        itemCount: filters.length,
         itemBuilder: (BuildContext context, int index) {
-          Map<String, dynamic> filter = currentFilters[index];
+          Map<String, dynamic> filter = filters[index];
           bool isSelected = filter['type'] == selectedFilter;
 
           return Container(
@@ -1006,7 +981,7 @@ class _HomeState extends State<Home> {
               avatar: Icon(filter['icon'],
                   color: isSelected ? Colors.white : Colors.grey),
               label: Text(filter['type'],
-                  style: GoogleFonts.getFont('Lexend',
+                  style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: 16,
                       color: isSelected ? Colors.white : Colors.grey)),
@@ -1015,11 +990,10 @@ class _HomeState extends State<Home> {
                 setState(() {
                   selectedFilter = value ? filter['type'] : '';
                 });
+                _updateMarkers(); // Update markers when filter is selected
               },
               backgroundColor: Color.fromARGB(255, 227, 227, 227),
-              selectedColor: isHelping
-                  ? Color.fromARGB(255, 137, 202, 255)
-                  : Color.fromARGB(255, 250, 121, 121),
+              selectedColor: Colors.blue, // Adjust as needed
               checkmarkColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
@@ -1106,6 +1080,7 @@ class _HomeState extends State<Home> {
     return Scaffold(
       body: Stack(
         children: [
+          // Google Map widget
           locationLoaded
               ? GoogleMap(
                   myLocationEnabled: true,
@@ -1114,11 +1089,12 @@ class _HomeState extends State<Home> {
                   mapToolbarEnabled: false,
                   onMapCreated: _onMapCreated,
                   initialCameraPosition: currentCameraPosition,
-                  onCameraMove: (position) => currentCameraPosition = position,
                   zoomControlsEnabled: false,
-                  markers: _getMarkersForMap(),
+                  markers: Set<Marker>.of(markers),
                 )
               : Center(child: CircularProgressIndicator()),
+
+          // Column containing top floating bar, filter bar, and offline widget
           Column(
             children: [
               _buildTopFloatingBar(),
@@ -1126,9 +1102,25 @@ class _HomeState extends State<Home> {
               isOffline ? _buildOfflineWidget() : Container(),
             ],
           ),
+
+          // Recenter button
           recenterBtn(_controllerCompleter, currentLocation),
+
+          // Action button
           actionBtn(isHelping, currentLocation, selectedFilter),
+
+          // SOS Button
           SOSButton(isHelping: isHelping == true),
+
+          // Button to submit user selections to Firestore
+          Positioned(
+            bottom: 20.0,
+            left: 20.0,
+            child: ElevatedButton(
+              onPressed: submitUserSelections,
+              child: Text('Submit User Selections to Firestore'),
+            ),
+          ),
         ],
       ),
     );
