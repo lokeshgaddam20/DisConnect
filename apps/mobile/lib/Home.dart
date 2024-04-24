@@ -167,6 +167,9 @@ class SOSButton extends StatelessWidget {
 
 class _HomeState extends State<Home> {
   Completer<GoogleMapController> _controllerCompleter = Completer();
+
+  List<Map<String, dynamic>> userSelections = [];
+
   late GoogleMapController mapController;
   late LatLng currentLocation = LatLng(0, 0);
   bool locationLoaded = false;
@@ -253,150 +256,63 @@ class _HomeState extends State<Home> {
   }
 
   void _processJsonData(Map<String, dynamic> data) async {
-    List<Marker> hospitals = [];
-    List<Marker> reliefCamps = [];
-    List<Marker> supplies = [];
-    List<Marker> shelters = [];
-    List<Marker> volunteers = [];
+    // Clear existing volunteer markers
+    _volunteerMarkers.clear();
 
-    List<Marker> victims = [];
-    List<Marker> food = [];
+    for (var selection in userSelections) {
+      if (selection['selectedOptions'].contains('Volunteer')) {
+        double latitude = selection['location']['latitude'];
+        double longitude = selection['location']['longitude'];
+        LatLng location = LatLng(latitude, longitude);
 
-    BitmapDescriptor foodMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/food.png',
-    );
-    BitmapDescriptor hospitalMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/hospital.png',
-    );
-    BitmapDescriptor reliefCampMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/reliefCamp.png',
-    );
-    BitmapDescriptor safeSpaceMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/safeSpace.png',
-    );
-    BitmapDescriptor suppliesMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/supplies.png',
-    );
-    BitmapDescriptor victimMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/victim.png',
-    );
-    BitmapDescriptor volunteerMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/volunteer.png',
-    );
-    BitmapDescriptor waterMarker = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(50, 50)),
-      'assets/maps/markers/water.png',
-    );
-
-    for (var item in data['need']) {
-      LatLng location =
-          LatLng(item['location']['lat'], item['location']['lng']);
-      Marker marker = Marker(
-          markerId: MarkerId(location.toString()),
-          anchor: Offset(0.5, 0.5),
-          position: location,
-          icon: (item['type'] == 'hospital')
-              ? hospitalMarker
-              : (item['type'] == 'reliefCamp')
-                  ? reliefCampMarker
-                  : (item['type'] == 'supplies')
-                      ? suppliesMarker
-                      : (item['type'] == 'safeSpace')
-                          ? safeSpaceMarker
-                          : (item['type'] == 'volunteer')
-                              ? volunteerMarker
-                              : (item['type'] == 'victim')
-                                  ? victimMarker
-                                  : (item['type'] == 'food')
-                                      ? foodMarker
-                                      : (item['type'] == 'water')
-                                          ? waterMarker
-                                          : BitmapDescriptor.defaultMarker,
-          onTap: () {
-            _showLocationDetails(context, item);
-          });
-      // Future marker = _createMarker(item['type'], location.latitude, location.longitude, item);
-
-      switch (item['type']) {
-        case 'hospital':
-          hospitals.add(marker);
-          break;
-        case 'reliefCamp':
-          reliefCamps.add(marker);
-          break;
-        case 'supplies':
-          supplies.add(marker);
-          break;
-        case 'safeSpace':
-          shelters.add(marker);
-          break;
-        case 'volunteer':
-          volunteers.add(marker);
-          break;
+        // Add volunteer marker to _volunteerMarkers list
+        _addMarker(location);
       }
     }
+  }
 
-    for (var item in data['give']) {
-      LatLng location =
-          LatLng(item['location']['lat'], item['location']['lng']);
-      // Marker marker = await _createMarker(item['type'], location.latitude, location.longitude, item);
+  List<Marker> _volunteerMarkers = [];
 
-      Marker marker = Marker(
-          markerId: MarkerId(location.toString()),
-          anchor: Offset(0.5, 0.5),
-          icon: (item['type'] == 'hospital')
-              ? hospitalMarker
-              : (item['type'] == 'reliefCamp')
-                  ? reliefCampMarker
-                  : (item['type'] == 'supplies')
-                      ? suppliesMarker
-                      : (item['type'] == 'safeSpace')
-                          ? safeSpaceMarker
-                          : (item['type'] == 'volunteer')
-                              ? volunteerMarker
-                              : (item['type'] == 'victim')
-                                  ? victimMarker
-                                  : (item['type'] == 'food')
-                                      ? foodMarker
-                                      : (item['type'] == 'water')
-                                          ? waterMarker
-                                          : BitmapDescriptor.defaultMarker,
-          position: location,
-          onTap: () {
-            _showLocationDetails(context, item);
-          });
+  void onVolunteerOptionClicked() {
+    print("Volunteer option clicked"); // Add this line for debugging
 
-      switch (item['type']) {
-        case 'victim':
-          victims.add(marker);
-          break;
-        case 'volunteer':
-          volunteers.add(marker);
-          break;
-        case 'food':
-          food.add(marker);
-          break;
-      }
+    // Filter userSelections to get entries where user has volunteered
+    List<Map<String, dynamic>> volunteerSelections =
+        userSelections.where((selection) {
+      return selection['selectedOptions'].contains('Volunteer');
+    }).toList();
+
+    // Extract coordinates and add markers to the map
+    for (var selection in volunteerSelections) {
+      double latitude = selection['location']['latitude'];
+      double longitude = selection['location']['longitude'];
+      LatLng location = LatLng(latitude, longitude);
+
+      // Add marker to the map
+      _addMarker(location);
     }
+  }
 
+  // Method to add marker to the map
+  void _addMarker(LatLng location) {
+    // Create marker
+    Marker marker = Marker(
+      markerId: MarkerId(location.toString()),
+      position: location,
+      // Add custom icon if needed
+      // icon: BitmapDescriptor.defaultMarker,
+      onTap: () {
+        // Handle marker tap event if needed
+      },
+    );
+
+    // Update the list of markers
     setState(() {
-      _hospitals = hospitals;
-      _reliefCamps = reliefCamps;
-      _supplies = supplies;
-      _shelters = shelters;
-      _victims = victims;
-      _volunteers = volunteers;
-      _food = food;
+      _volunteerMarkers.add(marker);
     });
   }
 
+  // Other existing methods...
   void _showLocationDetails(
       BuildContext context, Map<String, dynamic> locationDetails) async {
     final double startLatitude = currentLocation.latitude;
@@ -869,20 +785,31 @@ class _HomeState extends State<Home> {
                     ),
                     onPressed: isAnyOptionSelected()
                         ? () async {
+                            // Get the selected options
                             List<String> selectedHelp = helpOptions.entries
                                 .where((entry) => entry.value)
                                 .map((entry) => entry.key)
                                 .toList();
-                            // Handle the submission logic here
-                            print('Phone Number: $phoneNumber');
-                            print('Selected Help Options: $selectedHelp');
-                            makePostRequest(
-                                selectedHelp,
-                                isHelping,
-                                currentLocation.latitude,
-                                currentLocation.longitude);
-                            Navigator.pop(
-                                context); // Close the modal bottom sheet
+
+                            // Save user's location and selected options in ArrayList
+                            userSelections.add({
+                              'location': {
+                                'latitude': currentLocation.latitude,
+                                'longitude': currentLocation.longitude
+                              },
+                              'selectedOptions': selectedHelp,
+                            });
+
+                            // If phoneNumber is available and not empty, include it in the data
+                            if (phoneNumber != null && phoneNumber.isNotEmpty) {
+                              userSelections.last['phoneNumber'] = phoneNumber;
+                            }
+
+                            // Perform any necessary actions with the collected data
+                            print('User Selections: $userSelections');
+
+                            // Close the modal bottom sheet and reload the map markers
+                            Navigator.pop(context);
                             reloadMapMarkers();
                           }
                         : null,

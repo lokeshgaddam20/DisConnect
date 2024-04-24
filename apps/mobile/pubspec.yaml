@@ -1,5 +1,5 @@
-name: Sahaya
-description: "Your disaster management app."
+name: 'DisasterConnect'
+description: "disaster management app."
 publish_to: 'none'
 version: 1.0.0+1
 
