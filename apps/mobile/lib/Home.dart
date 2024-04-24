@@ -173,7 +173,7 @@ class _HomeState extends State<Home> {
   List<Map<String, dynamic>> userSelections = [];
   List<Marker> markers = [];
 
-  late LatLng currentLocation;
+  late LatLng currentLocation = LatLng(0, 0); // Initialize with default value
   bool locationLoaded = false;
   CameraPosition currentCameraPosition =
       CameraPosition(target: LatLng(0, 0), zoom: 0);
