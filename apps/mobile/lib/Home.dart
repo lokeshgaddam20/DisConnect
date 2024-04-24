@@ -169,24 +169,27 @@ class _HomeState extends State<Home> {
   Completer<GoogleMapController> _controllerCompleter = Completer();
 
   List<Map<String, dynamic>> userSelections = [];
+  List<Marker> markers = [];
 
-  late GoogleMapController mapController;
-  late LatLng currentLocation = LatLng(0, 0);
+  late LatLng currentLocation;
   bool locationLoaded = false;
   CameraPosition currentCameraPosition =
       CameraPosition(target: LatLng(0, 0), zoom: 0);
+
+  String selectedFilter = ''; // Track selected filter option
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+    Timer.periodic(Duration(seconds: 5), (timer) {
+      _checkConnectivity();
+    });
+  }
+
   String _mapStyle = '';
   bool isHelping = false;
   bool isOffline = false;
-
-  late List<Marker> _hospitals = [];
-  late List<Marker> _reliefCamps = [];
-  late List<Marker> _supplies = [];
-  late List<Marker> _shelters = [];
-  late List<Marker> _victims = [];
-
-  late List<Marker> _volunteers = [];
-  late List<Marker> _food = [];
 
   Future<void> _checkConnectivity() async {
     final isConnected = await InternetConnectionChecker().hasConnection;
@@ -210,20 +213,6 @@ class _HomeState extends State<Home> {
     {"type": "Shelter", "icon": FontAwesomeIcons.home},
     {"type": "Food", "icon": FontAwesomeIcons.utensils},
   ];
-
-  String selectedFilter = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _getCurrentLocation();
-    _loadMapStyle();
-    _loadModePreference();
-    _loadJsonData();
-    Timer.periodic(Duration(seconds: 5), (timer) {
-      _checkConnectivity();
-    });
-  }
 
   void _loadMapStyle() async {
     _mapStyle = await rootBundle.loadString('assets/maps/map_style.json');
@@ -476,20 +465,55 @@ class _HomeState extends State<Home> {
   }
 
   void _getCurrentLocation() async {
-    var position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
-    setState(() {
-      currentLocation = LatLng(position.latitude, position.longitude);
-      locationLoaded = true;
-      currentCameraPosition =
-          CameraPosition(target: currentLocation, zoom: 15.0);
-    });
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      setState(() {
+        currentLocation = LatLng(position.latitude, position.longitude);
+        locationLoaded = true;
+        currentCameraPosition =
+            CameraPosition(target: currentLocation, zoom: 15.0);
+      });
+    } catch (e) {
+      print("Error getting current location: $e");
+      // Handle error or provide a default location
+    }
   }
 
   void _onMapCreated(GoogleMapController controller) {
     _controllerCompleter.complete(controller);
-    mapController = controller;
-    mapController.setMapStyle(_mapStyle);
+    _updateMarkers();
+  }
+
+  Future<void> _updateMarkers() async {
+    final GoogleMapController controller = await _controllerCompleter.future;
+
+    if (selectedFilter.isNotEmpty) {
+      // Clear existing markers
+      markers.clear();
+
+      for (var selection in userSelections) {
+        if (selection['selectedOptions'].contains(selectedFilter)) {
+          double latitude = selection['location']['latitude'];
+          double longitude = selection['location']['longitude'];
+          LatLng location = LatLng(latitude, longitude);
+
+          // Create marker options
+          final Marker marker = Marker(
+            markerId: MarkerId('marker_${markers.length}'), // Unique marker id
+            position: location,
+            // Add other properties like icon, info window, etc.
+          );
+
+          // Add marker to the list
+          markers.add(marker);
+        }
+      }
+
+      // Update markers on the map
+      setState(() {}); // Trigger rebuild to update markers
+    }
   }
 
   void _loadModePreference() async {
@@ -516,40 +540,6 @@ class _HomeState extends State<Home> {
     await Future.delayed(Duration(minutes: 1));
     smsStream.isEmpty ? print('No messages') : print('Messages found');
     return messages;
-  }
-
-  Set<Marker> _getMarkersForMap() {
-    Set<Marker> markers = {};
-
-    if (!isHelping) {
-      if (selectedFilter.isEmpty || selectedFilter == "Hospital") {
-        markers.addAll(_hospitals);
-      }
-      if (selectedFilter.isEmpty || selectedFilter == "Relief Camp") {
-        markers.addAll(_reliefCamps);
-      }
-      if (selectedFilter.isEmpty || selectedFilter == "Supplies") {
-        markers.addAll(_supplies);
-      }
-      if (selectedFilter.isEmpty || selectedFilter == "Safe Space") {
-        markers.addAll(_shelters);
-      }
-      if (selectedFilter.isEmpty || selectedFilter == "Volunteer") {
-        markers.addAll(_volunteers);
-      }
-    } else {
-      if (selectedFilter.isEmpty || selectedFilter == "Victim") {
-        markers.addAll(_victims);
-      }
-      if (selectedFilter.isEmpty || selectedFilter == "Volunteer") {
-        markers.addAll(_volunteers);
-      }
-      if (selectedFilter.isEmpty || selectedFilter == "Food") {
-        markers.addAll(_food);
-      }
-    }
-
-    return markers;
   }
 
   Map<String, dynamic> _combineJsonData(List<String> messages) {
@@ -915,16 +905,17 @@ class _HomeState extends State<Home> {
   }
 
   Widget _buildFilterBar() {
-    List<Map<String, dynamic>> currentFilters =
-        isHelping ? filtersGiveHelp : filtersNeedHelp;
+    List<Map<String, dynamic>> filters =
+        filtersNeedHelp; // Assuming this list is defined
+
     return Container(
       height: 60,
       padding: EdgeInsets.symmetric(horizontal: 10),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: currentFilters.length,
+        itemCount: filters.length,
         itemBuilder: (BuildContext context, int index) {
-          Map<String, dynamic> filter = currentFilters[index];
+          Map<String, dynamic> filter = filters[index];
           bool isSelected = filter['type'] == selectedFilter;
 
           return Container(
@@ -933,7 +924,7 @@ class _HomeState extends State<Home> {
               avatar: Icon(filter['icon'],
                   color: isSelected ? Colors.white : Colors.grey),
               label: Text(filter['type'],
-                  style: GoogleFonts.getFont('Lexend',
+                  style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: 16,
                       color: isSelected ? Colors.white : Colors.grey)),
@@ -942,11 +933,10 @@ class _HomeState extends State<Home> {
                 setState(() {
                   selectedFilter = value ? filter['type'] : '';
                 });
+                _updateMarkers(); // Update markers when filter is selected
               },
               backgroundColor: Color.fromARGB(255, 227, 227, 227),
-              selectedColor: isHelping
-                  ? Color.fromARGB(255, 137, 202, 255)
-                  : Color.fromARGB(255, 250, 121, 121),
+              selectedColor: Colors.blue, // Adjust as needed
               checkmarkColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
@@ -1041,9 +1031,8 @@ class _HomeState extends State<Home> {
                   mapToolbarEnabled: false,
                   onMapCreated: _onMapCreated,
                   initialCameraPosition: currentCameraPosition,
-                  onCameraMove: (position) => currentCameraPosition = position,
                   zoomControlsEnabled: false,
-                  markers: _getMarkersForMap(),
+                  markers: Set<Marker>.of(markers),
                 )
               : Center(child: CircularProgressIndicator()),
           Column(
