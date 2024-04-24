@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_config/flutter_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'Family.dart';
 import 'getPhoneNumber.dart';
 import 'getPermissions.dart';
 import 'Home.dart';
@@ -34,6 +35,11 @@ class CustomNavigationBar extends StatelessWidget {
           icon: Icon(Icons.cloud_outlined),
           selectedIcon: Icon(Icons.cloud),
           label: 'Weather',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.cloud_outlined),
+          selectedIcon: Icon(Icons.family_restroom),
+          label: 'Family',
         ),
         //<------------------ADD MORE OPTIONS AS NEEDED----------------->
       ],
@@ -80,6 +86,7 @@ class _MyAppState extends State<MyApp> {
           children: [
             widget.phoneNumber == null ? GetPhoneNumber() : Home(),
             widget.permissionsGranted ? WeatherScreen() : GetPermissions(),
+            widget.permissionsGranted ? FamilySpace() : GetPermissions(),
             //<------------------ADD MORE OPTIONS AS NEEDED----------------->
           ],
         ),

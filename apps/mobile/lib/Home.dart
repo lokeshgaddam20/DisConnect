@@ -195,16 +195,16 @@ class _HomeState extends State<Home> {
   List<Map<String, dynamic>> filtersNeedHelp = [
     {"type": "Hospital", "icon": FontAwesomeIcons.truckMedical},
     {"type": "Relief Camp", "icon": FontAwesomeIcons.tent},
-    {"type": "Safe Space", "icon": FontAwesomeIcons.home},
+    {"type": "Safe Space", "icon": FontAwesomeIcons.house},
     {"type": "Supplies", "icon": FontAwesomeIcons.boxOpen},
-    {"type": "Volunteer", "icon": FontAwesomeIcons.handsHelping},
+    {"type": "Volunteer", "icon": FontAwesomeIcons.handshakeAngle},
   ];
 
   List<Map<String, dynamic>> filtersGiveHelp = [
     {"type": "Victim", "icon": FontAwesomeIcons.handHoldingMedical},
-    {"type": "Volunteer", "icon": FontAwesomeIcons.handsHelping},
+    {"type": "Volunteer", "icon": FontAwesomeIcons.handshakeAngle},
     {"type": "Donate", "icon": FontAwesomeIcons.gift},
-    {"type": "Shelter", "icon": FontAwesomeIcons.home},
+    {"type": "Shelter", "icon": FontAwesomeIcons.house},
     {"type": "Food", "icon": FontAwesomeIcons.utensils},
   ];
 
