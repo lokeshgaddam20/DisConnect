@@ -38,11 +38,11 @@ class CustomNavigationBar extends StatelessWidget {
           selectedIcon: Icon(Icons.cloud),
           label: 'Weather',
         ),
-        // NavigationDestination(
-        //   icon: Icon(Icons.family_restroom_outlined),
-        //   selectedIcon: Icon(Icons.family_restroom),
-        //   label: 'Family',
-        // ),
+        NavigationDestination(
+          icon: Icon(Icons.chat_outlined), // Added chat icon here
+          selectedIcon: Icon(Icons.chat),
+          label: 'Chat',
+        ),
         //<------------------ADD MORE OPTIONS AS NEEDED----------------->
       ],
     );
