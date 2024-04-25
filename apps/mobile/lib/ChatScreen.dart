@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:Sahaya/FamilyMember.dart';
+import 'FamilyMember.dart';
 
 class ChatScreen extends StatefulWidget {
   final FamilyMember member;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_config/flutter_config.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:Sahaya/firebase_options.dart';
+import 'firebase_options.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 

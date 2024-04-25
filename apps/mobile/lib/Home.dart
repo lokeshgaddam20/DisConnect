@@ -173,7 +173,7 @@ class _HomeState extends State<Home> {
   List<Map<String, dynamic>> userSelections = [];
   List<Marker> markers = [];
 
-  late LatLng currentLocation;
+  late LatLng currentLocation = LatLng(0, 0); // Initialize with default value
   bool locationLoaded = false;
   CameraPosition currentCameraPosition =
       CameraPosition(target: LatLng(0, 0), zoom: 0);
@@ -220,15 +220,22 @@ class _HomeState extends State<Home> {
       firestoreData.add(firestoreDoc);
     }
 
-    // Update Firestore with the new data
+    // Delete the existing document, if it exists
     userSelectionsCollection
-        .doc('unique_document_id') // Use a unique document ID
-        .set({'selections': firestoreData})
-        .then((value) => print("User selections updated"))
-        .catchError(
-            (error) => print("Failed to update user selections: $error"));
+        .doc('unique_document_id') // Use the same unique document ID
+        .delete()
+        .then((_) {
+      // After deletion, create a new document with the updated data
+      userSelectionsCollection
+          .doc('unique_document_id') // Use the same unique document ID
+          .set({'selections': firestoreData})
+          .then((_) => print("User selections updated"))
+          .catchError(
+              (error) => print("Failed to update user selections: $error"));
+    }).catchError((error) => print("Failed to delete document: $error"));
   }
 
+// Function to handle the submission of user selections
   // Function to handle the submission of user selections
   void submitUserSelections() async {
     // Get the selected options
@@ -242,17 +249,28 @@ class _HomeState extends State<Home> {
         .whereType<String>()
         .toList(); // This will filter out non-string items
 
-    // Save user's location and selected options in the userSelections list
-    userSelections.add({
-      'location': {
-        'latitude': currentLocation.latitude,
-        'longitude': currentLocation.longitude
-      },
-      'selectedOptions': selectedHelp,
-    });
+    // Check if any existing user selection matches the current selection
+    bool userSelectionExists = userSelections.any((selection) =>
+        selection['location']['latitude'] == currentLocation.latitude &&
+        selection['location']['longitude'] == currentLocation.longitude &&
+        List<String>.from(selection['selectedOptions'])
+            .toSet()
+            .containsAll(selectedHelp.toSet()));
 
-    // Update user selections in Firestore
-    updateUserSelections(userSelections);
+    // Add new user selection only if it doesn't already exist in the list
+    if (!userSelectionExists) {
+      // Save user's location and selected options in the userSelections list
+      // userSelections.add({
+      //   'location': {
+      //     'latitude': currentLocation.latitude,
+      //     'longitude': currentLocation.longitude
+      //   },
+      //   'selectedOptions': selectedHelp,
+      // });
+
+      // Update user selections in Firestore
+      updateUserSelections(userSelections);
+    }
   }
 
   List<Map<String, dynamic>> filtersNeedHelp = [
@@ -1118,7 +1136,7 @@ class _HomeState extends State<Home> {
             left: 20.0,
             child: ElevatedButton(
               onPressed: submitUserSelections,
-              child: Text('Submit User Selections to Firestore'),
+              child: Text('Firestore'),
             ),
           ),
         ],

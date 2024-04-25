@@ -4,7 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
 import 'ChatScreen.dart';
-import 'package:Sahaya/FamilyMember.dart';
+import 'FamilyMember.dart';
 
 class FamilySpaceScreen extends StatefulWidget {
   @override
