@@ -220,19 +220,30 @@ class _HomeState extends State<Home> {
       firestoreData.add(firestoreDoc);
     }
 
-    // Delete the existing document, if it exists
+    // Check if the document already exists
     userSelectionsCollection
-        .doc('unique_document_id') // Use the same unique document ID
-        .delete()
-        .then((_) {
-      // After deletion, create a new document with the updated data
-      userSelectionsCollection
-          .doc('unique_document_id') // Use the same unique document ID
-          .set({'selections': firestoreData})
-          .then((_) => print("User selections updated"))
-          .catchError(
-              (error) => print("Failed to update user selections: $error"));
-    }).catchError((error) => print("Failed to delete document: $error"));
+        .doc('unique_document_id')
+        .get()
+        .then((docSnapshot) {
+      if (docSnapshot.exists) {
+        // If the document exists, update it with the new data
+        userSelectionsCollection
+            .doc('unique_document_id')
+            .update({'selections': firestoreData})
+            .then((_) => print("User selections updated"))
+            .catchError(
+                (error) => print("Failed to update user selections: $error"));
+      } else {
+        // If the document doesn't exist, create it with the new data
+        userSelectionsCollection
+            .doc('unique_document_id')
+            .set({'selections': firestoreData})
+            .then((_) => print("User selections created"))
+            .catchError(
+                (error) => print("Failed to create user selections: $error"));
+      }
+    }).catchError(
+            (error) => print("Failed to check document existence: $error"));
   }
 
 // Function to handle the submission of user selections
@@ -259,16 +270,6 @@ class _HomeState extends State<Home> {
 
     // Add new user selection only if it doesn't already exist in the list
     if (!userSelectionExists) {
-      // Save user's location and selected options in the userSelections list
-      // userSelections.add({
-      //   'location': {
-      //     'latitude': currentLocation.latitude,
-      //     'longitude': currentLocation.longitude
-      //   },
-      //   'selectedOptions': selectedHelp,
-      // });
-
-      // Update user selections in Firestore
       updateUserSelections(userSelections);
     }
   }
@@ -280,6 +281,53 @@ class _HomeState extends State<Home> {
     {"type": "Supplies", "icon": FontAwesomeIcons.boxOpen},
     {"type": "Volunteer", "icon": FontAwesomeIcons.handshakeAngle},
   ];
+
+  // Define a list to store relief camp markers
+  List<Marker> _reliefCampMarkers = [];
+
+  void onReliefCampOptionClicked() {
+    // Call the method to add relief camp markers from static data
+    _addReliefCampMarkersFromStaticData();
+  }
+
+// Method to add relief camp markers based on static data
+  void _addReliefCampMarkersFromStaticData() {
+    // Static data containing relief camp coordinates
+    List<Map<String, double>> reliefCampCoordinates = [
+      {
+        "latitude": 17.4065,
+        "longitude": 78.4772
+      }, // Example coordinates for Hyderabad
+      // Add more coordinates as needed
+    ];
+
+    // Loop through the static data and add markers
+    for (var coordinates in reliefCampCoordinates) {
+      double latitude = coordinates['latitude']!;
+      double longitude = coordinates['longitude']!;
+      LatLng location = LatLng(latitude, longitude);
+      _addReliefCampMarker(location);
+    }
+  }
+
+// Method to add relief camp marker to the map
+  void _addReliefCampMarker(LatLng location) {
+    // Create marker
+    Marker marker = Marker(
+      markerId: MarkerId(location.toString()),
+      position: location,
+      // Add custom icon if needed
+      // icon: BitmapDescriptor.defaultMarker,
+      onTap: () {
+        // Handle marker tap event if needed
+      },
+    );
+
+    // Update the list of relief camp markers
+    setState(() {
+      _reliefCampMarkers.add(marker);
+    });
+  }
 
   List<Map<String, dynamic>> filtersGiveHelp = [
     {"type": "Victim", "icon": FontAwesomeIcons.handHoldingMedical},
