@@ -21,8 +21,7 @@ import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:shake/shake.dart';
-
-import 'package:url_launcher/url_launcher.dart';
+import 'package:geolocator/geolocator.dart';
 //import 'package:sms_advanced/sms_advanced.dart';
 
 class Home extends StatefulWidget {
@@ -628,6 +627,7 @@ class _HomeState extends State<Home> {
     _controllerCompleter.complete(controller);
     _updateMarkers();
   }
+  // Import geolocator package
 
   Future<void> _updateMarkers() async {
     final GoogleMapController controller = await _controllerCompleter.future;
@@ -636,9 +636,8 @@ class _HomeState extends State<Home> {
       // Clear existing markers
       markers.clear();
 
-      // Check if the selected filter is "Hospital"
       if (selectedFilter == "Hospital") {
-        // Add markers for hospital locations
+        // Add static hospital locations
         List<LatLng> hospitalLocations = getHospitalLocations();
         for (int i = 0; i < hospitalLocations.length; i++) {
           LatLng location = hospitalLocations[i];
@@ -647,9 +646,8 @@ class _HomeState extends State<Home> {
             position: location,
             // Add other properties like icon, info window, etc.
             infoWindow: InfoWindow(
-              title: getHospitalName(i), // Function to get hospital name
-              snippet:
-                  getHospitalDetails(i), // Function to get hospital details
+              title: getHospitalName(i),
+              snippet: getHospitalDetails(i),
               onTap: () {
                 _launchMapsUrl(location.latitude, location.longitude);
               },
@@ -657,6 +655,9 @@ class _HomeState extends State<Home> {
           );
           markers.add(marker);
         }
+
+        // Fetch and add nearby hospitals
+        await _addNearbyHospitals(controller);
       } else {
         // If the selected filter is not "Hospital", add markers based on user selections
         for (var selection in userSelections) {
@@ -665,14 +666,12 @@ class _HomeState extends State<Home> {
             double longitude = selection['location']['longitude'];
             LatLng location = LatLng(latitude, longitude);
 
-            // Create marker options
             final Marker marker = Marker(
               markerId: MarkerId('marker_${markers.length}'),
               position: location,
               // Add other properties like icon, info window, etc.
             );
 
-            // Add marker to the list
             markers.add(marker);
           }
         }
@@ -680,6 +679,71 @@ class _HomeState extends State<Home> {
 
       // Update markers on the map
       setState(() {}); // Trigger rebuild to update markers
+    }
+  }
+
+  Future<void> _addNearbyHospitals(GoogleMapController controller) async {
+    // Get user's current location
+    Position position = await Geolocator.getCurrentPosition();
+
+    // Fetch nearby hospital locations
+    List<LatLng> nearbyHospitalLocations =
+        await _fetchNearbyHospitals(position);
+
+    // Add nearby hospitals as markers
+    for (int i = 0; i < nearbyHospitalLocations.length; i++) {
+      LatLng location = nearbyHospitalLocations[i];
+      final Marker marker = Marker(
+        markerId: MarkerId('nearby_hospital_$i'),
+        position: location,
+        // Add other properties like icon, info window, etc.
+        infoWindow: InfoWindow(
+          title: 'Nearby Hospital',
+          onTap: () {
+            _launchMapsUrl(location.latitude, location.longitude);
+          },
+        ),
+      );
+      markers.add(marker);
+    }
+  }
+
+  Future<List<LatLng>> _fetchNearbyHospitals(Position position) async {
+    // Replace 'YOUR_API_KEY' with your actual Google Places API key
+    final apiKey = 'AIzaSyAcRopFCtkeYwaYEQhw1lLF2bbU50RsQgc';
+    final baseUrl =
+        'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+
+    // Define parameters for the API request
+    final params = {
+      'key': apiKey,
+      'location': '${position.latitude},${position.longitude}',
+      'radius': '5000', // Search radius in meters (adjust as needed)
+      'type': 'hospital', // Search type for hospitals
+    };
+
+    // Construct the request URL
+    final url = Uri.parse(baseUrl + '?' + Uri(queryParameters: params).query);
+
+    // Send the HTTP request
+    final response = await http.get(url);
+
+    // Parse the response
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final results = data['results'] as List<dynamic>;
+
+      // Extract locations from results
+      final hospitalLocations = results.map<LatLng>((result) {
+        final location = result['geometry']['location'];
+        final lat = location['lat'] as double;
+        final lng = location['lng'] as double;
+        return LatLng(lat, lng);
+      }).toList();
+
+      return hospitalLocations;
+    } else {
+      throw Exception('Failed to fetch nearby hospitals');
     }
   }
 
@@ -708,7 +772,7 @@ class _HomeState extends State<Home> {
   String getHospitalDetails(int index) {
     // Define a function to get the hospital details based on the index
     List<String> details = [
-      "CLICK Here(maps): Rd Number 72, opposite Bharatiya Vidya Bhavan School, Film Nagar, Hyderabad, Telangana 500033",
+      "CLICK Here(maps): ",
       "CLICK Here(maps): Rd Number 1, Prem Nagar, Banjara Hills, Hyderabad, Telangana 500034",
       "CLICK Here(maps): Alexander Rd, Kummari Guda, Shivaji Nagar, Secunderabad, Telangana 500003",
       "CLICK Here(maps): Financial District, Nanakramguda, Hyderabad, Telangana 500032",

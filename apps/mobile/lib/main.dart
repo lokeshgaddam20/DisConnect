@@ -10,6 +10,7 @@ import 'getPhoneNumber.dart';
 import 'getPermissions.dart';
 import 'Home.dart';
 import 'Weather.dart';
+import 'Family.dart';
 
 class CustomNavigationBar extends StatelessWidget {
   final int selectedIndex;
@@ -88,7 +89,7 @@ class _MyAppState extends State<MyApp> {
           children: [
             widget.phoneNumber == null ? GetPhoneNumber() : Home(),
             widget.permissionsGranted ? WeatherScreen() : GetPermissions(),
-            // widget.permissionsGranted ? FamilySpaceScreen() : GetPermissions(),
+            widget.permissionsGranted ? FamilySpaceScreen() : GetPermissions(),
             //<------------------ADD MORE OPTIONS AS NEEDED----------------->
           ],
         ),

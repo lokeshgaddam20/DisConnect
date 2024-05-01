@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   # flutter_blue: ^0.8.0
-  #url_launcher: ^6.0.9
+  twilio_flutter: ^0.3.0
   get: ^4.1.4
   protobuf: ^2.1.0
   shake: ^2.2.0 
