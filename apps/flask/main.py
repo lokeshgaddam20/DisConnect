@@ -26,7 +26,7 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def index():
-    return '<samp>🔼 Sahaya Flask for Backend?</samp>'
+    return '<samp>🔼 DisasterConnect Flask for Backend?</samp>'
 
 
 @app.route('/api/gemini/',methods = ['GET'])

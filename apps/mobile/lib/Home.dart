@@ -20,6 +20,11 @@ import 'package:http/http.dart' as http;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:shake/shake.dart';
+
+import 'package:url_launcher/url_launcher.dart';
+//import 'package:sms_advanced/sms_advanced.dart';
+
 class Home extends StatefulWidget {
   @override
   _HomeState createState() => _HomeState();
@@ -187,6 +192,21 @@ class _HomeState extends State<Home> {
     Timer.periodic(Duration(seconds: 5), (timer) {
       _checkConnectivity();
     });
+
+    ShakeDetector.autoStart(
+      onPhoneShake: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Shaked!'),
+          ),
+        );
+        // _sendEmergencyMessage(); // Call function to send SOS message
+      },
+      minimumShakeCount: 2,
+      shakeSlopTimeMS: 500,
+      shakeCountResetTime: 3000,
+      shakeThresholdGravity: 2.7,
+    );
   }
 
   String _mapStyle = '';
@@ -368,8 +388,8 @@ class _HomeState extends State<Home> {
   }
 
   void _processJsonData(Map<String, dynamic> data) async {
-    // Clear existing volunteer markers
-    _volunteerMarkers.clear();
+    // // Clear existing volunteer markers
+    // _volunteerMarkers.clear();
 
     for (var selection in userSelections) {
       if (selection['selectedOptions'].contains('Volunteer')) {
@@ -616,27 +636,99 @@ class _HomeState extends State<Home> {
       // Clear existing markers
       markers.clear();
 
-      for (var selection in userSelections) {
-        if (selection['selectedOptions'].contains(selectedFilter)) {
-          double latitude = selection['location']['latitude'];
-          double longitude = selection['location']['longitude'];
-          LatLng location = LatLng(latitude, longitude);
-
-          // Create marker options
+      // Check if the selected filter is "Hospital"
+      if (selectedFilter == "Hospital") {
+        // Add markers for hospital locations
+        List<LatLng> hospitalLocations = getHospitalLocations();
+        for (int i = 0; i < hospitalLocations.length; i++) {
+          LatLng location = hospitalLocations[i];
           final Marker marker = Marker(
-            markerId: MarkerId('marker_${markers.length}'), // Unique marker id
+            markerId: MarkerId('hospital_$i'),
             position: location,
             // Add other properties like icon, info window, etc.
+            infoWindow: InfoWindow(
+              title: getHospitalName(i), // Function to get hospital name
+              snippet:
+                  getHospitalDetails(i), // Function to get hospital details
+              onTap: () {
+                _launchMapsUrl(location.latitude, location.longitude);
+              },
+            ),
           );
-
-          // Add marker to the list
           markers.add(marker);
+        }
+      } else {
+        // If the selected filter is not "Hospital", add markers based on user selections
+        for (var selection in userSelections) {
+          if (selection['selectedOptions'].contains(selectedFilter)) {
+            double latitude = selection['location']['latitude'];
+            double longitude = selection['location']['longitude'];
+            LatLng location = LatLng(latitude, longitude);
+
+            // Create marker options
+            final Marker marker = Marker(
+              markerId: MarkerId('marker_${markers.length}'),
+              position: location,
+              // Add other properties like icon, info window, etc.
+            );
+
+            // Add marker to the list
+            markers.add(marker);
+          }
         }
       }
 
       // Update markers on the map
       setState(() {}); // Trigger rebuild to update markers
     }
+  }
+
+  void _launchMapsUrl(double latitude, double longitude) async {
+    final url =
+        'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude';
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  String getHospitalName(int index) {
+    // Define a function to get the hospital name based on the index
+    List<String> names = [
+      "Apollo Hospitals, Jubilee Hills",
+      "Care Hospitals, Banjara Hills",
+      "Yashoda Hospitals, Secunderabad",
+      "Continental Hospitals, Nanakramguda",
+      "KIMS Hospitals, Kondapur"
+    ];
+    return names[index];
+  }
+
+  String getHospitalDetails(int index) {
+    // Define a function to get the hospital details based on the index
+    List<String> details = [
+      "CLICK Here(maps): Rd Number 72, opposite Bharatiya Vidya Bhavan School, Film Nagar, Hyderabad, Telangana 500033",
+      "CLICK Here(maps): Rd Number 1, Prem Nagar, Banjara Hills, Hyderabad, Telangana 500034",
+      "CLICK Here(maps): Alexander Rd, Kummari Guda, Shivaji Nagar, Secunderabad, Telangana 500003",
+      "CLICK Here(maps): Financial District, Nanakramguda, Hyderabad, Telangana 500032",
+      "CLICK Here(maps): 1-112 / 86, Survey No 5 / EE, beside Union Bank, near RTA Office, Kondapur, Telangana 500084"
+    ];
+    return details[index];
+  }
+
+  List<LatLng> getHospitalLocations() {
+    return [
+      LatLng(17.415597946043818,
+          78.41282706869062), // Apollo Hospitals, Jubilee Hills
+      LatLng(17.412889287173705,
+          78.45023296684334), // Care Hospitals, Banjara Hills
+      LatLng(17.441969329824037,
+          78.49712479567914), // Yashoda Hospitals, Secunderabad
+      LatLng(17.41753954787001,
+          78.33938422451398), // Continental Hospitals, Nanakramguda
+      LatLng(17.466517669187308, 78.3678987091736), // KIMS Hospitals, Kondapur
+    ];
   }
 
   void _loadModePreference() async {

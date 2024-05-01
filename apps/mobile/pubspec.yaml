@@ -10,8 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
   # flutter_blue: ^0.8.0
+  #url_launcher: ^6.0.9
   get: ^4.1.4
   protobuf: ^2.1.0
+  shake: ^2.2.0 
 
   cupertino_icons: ^1.0.2
   flutter_config:
