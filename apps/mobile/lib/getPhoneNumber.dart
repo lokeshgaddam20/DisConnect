@@ -112,7 +112,11 @@ class _GetPhoneNumberState extends State<GetPhoneNumber> {
                                 final prefs =
                                     await SharedPreferences.getInstance();
                                 prefs.setString('phoneNumber', controller.text);
-                                final String userKey = generateUserKey();
+                                String? userKey = generateUserKey();
+                                // String? phoneNumber = controller.text;
+                                // SharedPreferences prefs =
+                                //     await SharedPreferences.getInstance();
+                                // userKey = prefs.setString('userKey', userkey);
 
                                 await firestore
                                     .collection('users')
