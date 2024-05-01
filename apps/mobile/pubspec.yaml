@@ -35,6 +35,7 @@ dependencies:
   firebase_core: 
   firebase_auth:
   cloud_firestore:
+  flutter_blue:
   uuid:
 
 

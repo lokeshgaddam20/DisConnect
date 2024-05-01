@@ -35,15 +35,15 @@ class CustomNavigationBar extends StatelessWidget {
           label: 'Home',
         ),
         NavigationDestination(
+          icon: Icon(Icons.family_restroom_outlined),
+          selectedIcon: Icon(Icons.family_restroom),
+          label: 'Family',
+        ),
+        NavigationDestination(
           icon: Icon(Icons.cloud_outlined),
           selectedIcon: Icon(Icons.cloud),
           label: 'Weather',
         ),
-        // NavigationDestination(
-        //   icon: Icon(Icons.family_restroom_outlined),
-        //   selectedIcon: Icon(Icons.family_restroom),
-        //   label: 'Family',
-        // ),
         //<------------------ADD MORE OPTIONS AS NEEDED----------------->
       ],
     );
