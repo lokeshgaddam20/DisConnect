@@ -6,11 +6,12 @@ import 'firebase_options.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:DisasterConnect/Family.dart';
+import 'Family.dart';
 import 'getPhoneNumber.dart';
 import 'getPermissions.dart';
 import 'Home.dart';
 import 'Weather.dart';
+import 'Family.dart';
 
 class CustomNavigationBar extends StatelessWidget {
   final int selectedIndex;
@@ -35,14 +36,14 @@ class CustomNavigationBar extends StatelessWidget {
           label: 'Home',
         ),
         NavigationDestination(
-          icon: Icon(Icons.family_restroom_outlined),
-          selectedIcon: Icon(Icons.family_restroom),
-          label: 'Family',
-        ),
-        NavigationDestination(
           icon: Icon(Icons.cloud_outlined),
           selectedIcon: Icon(Icons.cloud),
           label: 'Weather',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.family_restroom_outlined),
+          selectedIcon: Icon(Icons.family_restroom),
+          label: 'Family',
         ),
         //<------------------ADD MORE OPTIONS AS NEEDED----------------->
       ],
@@ -89,8 +90,6 @@ class _MyAppState extends State<MyApp> {
           children: [
             widget.phoneNumber == null ? GetPhoneNumber() : Home(),
             widget.permissionsGranted ? WeatherScreen() : GetPermissions(),
-            FamilySpaceScreen(),
-            // widget.permissionsGranted ? FamilySpaceScreen() : GetPermissions(),
             //<------------------ADD MORE OPTIONS AS NEEDED----------------->
           ],
         ),

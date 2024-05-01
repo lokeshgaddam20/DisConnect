@@ -257,6 +257,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.16.0"
+  firebase_database:
+    dependency: "direct main"
+    description:
+      name: firebase_database
+      sha256: "4dca169ff762a5697f0008b1ad3fc2c3c0099d935cb6a5a9d2bb93cbb64f9efe"
+      url: "https://pub.dev"
+    source: hosted
+    version: "10.5.4"
+  firebase_database_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_database_platform_interface
+      sha256: fca6702b65a337f0bf4e497fb1621cfb480825940f75a1cf1bc34802ab0a2a89
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.5+32"
+  firebase_database_web:
+    dependency: transitive
+    description:
+      name: firebase_database_web
+      sha256: "587caa3d12ea197f91e05470c074a5d12203cdecd8431dd1b711effee072f6f7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.5+4"
   fixnum:
     dependency: transitive
     description:
@@ -270,14 +294,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_blue:
-    dependency: "direct main"
-    description:
-      name: flutter_blue
-      sha256: f7f76b9b80455b0375693ec96c276fadb01e94d8441fa1740a64980cd1aeda5c
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.8.0"
   flutter_cache_manager:
     dependency: transitive
     description:
@@ -440,6 +456,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.6.6"
+  get_it:
+    dependency: transitive
+    description:
+      name: get_it
+      sha256: d85128a5dae4ea777324730dc65edd9c9f43155c109d5cc0a69cab74139fbac1
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.7.0"
   google_fonts:
     dependency: "direct main"
     description:
@@ -584,6 +608,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
+  logging:
+    dependency: transitive
+    description:
+      name: logging
+      sha256: "623a88c9594aa774443aa3eb2d41807a48486b5613e67599fb4c41c0ad47c340"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0"
   markdown:
     dependency: transitive
     description:
@@ -800,6 +832,38 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.26.0"
+  sensors_plus:
+    dependency: transitive
+    description:
+      name: sensors_plus
+      sha256: "362c8f4f001838b90dd5206b898bbad941bc0142479eab9a3415f0f79e622908"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
+  sensors_plus_platform_interface:
+    dependency: transitive
+    description:
+      name: sensors_plus_platform_interface
+      sha256: bc472d6cfd622acb4f020e726433ee31788b038056691ba433fec80e448a094f
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0"
+  sensors_plus_web:
+    dependency: transitive
+    description:
+      name: sensors_plus_web
+      sha256: fca8d7d9ab6233b2a059952666415508e252420be1ef54f092d07884da53ec5e
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.2"
+  shake:
+    dependency: "direct main"
+    description:
+      name: shake
+      sha256: "107546951c6b8f5e4c2dca66dfb3aa27dd1a853b4e9a26c9aea224b167045023"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.0"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -965,6 +1029,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.9.2"
+  twilio_flutter:
+    dependency: "direct main"
+    description:
+      name: twilio_flutter
+      sha256: "5c5fd337e823587b45faabc5e8935eb0552b4ca16c4259fd11a541ee8f306dd5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   typed_data:
     dependency: transitive
     description:

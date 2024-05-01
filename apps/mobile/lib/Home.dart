@@ -20,6 +20,10 @@ import 'package:http/http.dart' as http;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:shake/shake.dart';
+import 'package:geolocator/geolocator.dart';
+//import 'package:sms_advanced/sms_advanced.dart';
+
 class Home extends StatefulWidget {
   @override
   _HomeState createState() => _HomeState();
@@ -187,6 +191,21 @@ class _HomeState extends State<Home> {
     Timer.periodic(Duration(seconds: 5), (timer) {
       _checkConnectivity();
     });
+
+    ShakeDetector.autoStart(
+      onPhoneShake: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Shaked!'),
+          ),
+        );
+        // _sendEmergencyMessage(); // Call function to send SOS message
+      },
+      minimumShakeCount: 2,
+      shakeSlopTimeMS: 500,
+      shakeCountResetTime: 3000,
+      shakeThresholdGravity: 2.7,
+    );
   }
 
   String _mapStyle = '';
@@ -214,6 +233,7 @@ class _HomeState extends State<Home> {
       Map<String, dynamic> firestoreDoc = {
         'location': selection['location'],
         'selectedOptions': selection['selectedOptions'],
+        'phonenumber': selection['phonenumber'],
         // Add any additional fields you want to store
       };
 
@@ -368,8 +388,8 @@ class _HomeState extends State<Home> {
   }
 
   void _processJsonData(Map<String, dynamic> data) async {
-    // Clear existing volunteer markers
-    _volunteerMarkers.clear();
+    // // Clear existing volunteer markers
+    // _volunteerMarkers.clear();
 
     for (var selection in userSelections) {
       if (selection['selectedOptions'].contains('Volunteer')) {
@@ -608,6 +628,7 @@ class _HomeState extends State<Home> {
     _controllerCompleter.complete(controller);
     _updateMarkers();
   }
+  // Import geolocator package
 
   Future<void> _updateMarkers() async {
     final GoogleMapController controller = await _controllerCompleter.future;
@@ -616,27 +637,163 @@ class _HomeState extends State<Home> {
       // Clear existing markers
       markers.clear();
 
-      for (var selection in userSelections) {
-        if (selection['selectedOptions'].contains(selectedFilter)) {
-          double latitude = selection['location']['latitude'];
-          double longitude = selection['location']['longitude'];
-          LatLng location = LatLng(latitude, longitude);
-
-          // Create marker options
+      if (selectedFilter == "Hospital") {
+        // Add static hospital locations
+        List<LatLng> hospitalLocations = getHospitalLocations();
+        for (int i = 0; i < hospitalLocations.length; i++) {
+          LatLng location = hospitalLocations[i];
           final Marker marker = Marker(
-            markerId: MarkerId('marker_${markers.length}'), // Unique marker id
+            markerId: MarkerId('hospital_$i'),
             position: location,
             // Add other properties like icon, info window, etc.
+            infoWindow: InfoWindow(
+              title: getHospitalName(i),
+              snippet: getHospitalDetails(i),
+              onTap: () {
+                _launchMapsUrl(location.latitude, location.longitude);
+              },
+            ),
           );
-
-          // Add marker to the list
           markers.add(marker);
+        }
+
+        // Fetch and add nearby hospitals
+        await _addNearbyHospitals(controller);
+      } else {
+        // If the selected filter is not "Hospital", add markers based on user selections
+        for (var selection in userSelections) {
+          if (selection['selectedOptions'].contains(selectedFilter)) {
+            double latitude = selection['location']['latitude'];
+            double longitude = selection['location']['longitude'];
+            LatLng location = LatLng(latitude, longitude);
+
+            final Marker marker = Marker(
+              markerId: MarkerId('marker_${markers.length}'),
+              position: location,
+              // Add other properties like icon, info window, etc.
+            );
+
+            markers.add(marker);
+          }
         }
       }
 
       // Update markers on the map
       setState(() {}); // Trigger rebuild to update markers
     }
+  }
+
+  Future<void> _addNearbyHospitals(GoogleMapController controller) async {
+    // Get user's current location
+    Position position = await Geolocator.getCurrentPosition();
+
+    // Fetch nearby hospital locations
+    List<LatLng> nearbyHospitalLocations =
+        await _fetchNearbyHospitals(position);
+
+    // Add nearby hospitals as markers
+    for (int i = 0; i < nearbyHospitalLocations.length; i++) {
+      LatLng location = nearbyHospitalLocations[i];
+      final Marker marker = Marker(
+        markerId: MarkerId('nearby_hospital_$i'),
+        position: location,
+        // Add other properties like icon, info window, etc.
+        infoWindow: InfoWindow(
+          title: 'Nearby Hospital',
+          onTap: () {
+            _launchMapsUrl(location.latitude, location.longitude);
+          },
+        ),
+      );
+      markers.add(marker);
+    }
+  }
+
+  Future<List<LatLng>> _fetchNearbyHospitals(Position position) async {
+    // Replace 'YOUR_API_KEY' with your actual Google Places API key
+    final apiKey = 'AIzaSyAcRopFCtkeYwaYEQhw1lLF2bbU50RsQgc';
+    final baseUrl =
+        'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+
+    // Define parameters for the API request
+    final params = {
+      'key': apiKey,
+      'location': '${position.latitude},${position.longitude}',
+      'radius': '5000', // Search radius in meters (adjust as needed)
+      'type': 'hospital', // Search type for hospitals
+    };
+
+    // Construct the request URL
+    final url = Uri.parse(baseUrl + '?' + Uri(queryParameters: params).query);
+
+    // Send the HTTP request
+    final response = await http.get(url);
+
+    // Parse the response
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final results = data['results'] as List<dynamic>;
+
+      // Extract locations from results
+      final hospitalLocations = results.map<LatLng>((result) {
+        final location = result['geometry']['location'];
+        final lat = location['lat'] as double;
+        final lng = location['lng'] as double;
+        return LatLng(lat, lng);
+      }).toList();
+
+      return hospitalLocations;
+    } else {
+      throw Exception('Failed to fetch nearby hospitals');
+    }
+  }
+
+  void _launchMapsUrl(double latitude, double longitude) async {
+    final url =
+        'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude';
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  String getHospitalName(int index) {
+    // Define a function to get the hospital name based on the index
+    List<String> names = [
+      "Apollo Hospitals, Jubilee Hills",
+      "Care Hospitals, Banjara Hills",
+      "Yashoda Hospitals, Secunderabad",
+      "Continental Hospitals, Nanakramguda",
+      "KIMS Hospitals, Kondapur"
+    ];
+    return names[index];
+  }
+
+  String getHospitalDetails(int index) {
+    // Define a function to get the hospital details based on the index
+    List<String> details = [
+      "CLICK Here(maps): ",
+      "CLICK Here(maps): Rd Number 1, Prem Nagar, Banjara Hills, Hyderabad, Telangana 500034",
+      "CLICK Here(maps): Alexander Rd, Kummari Guda, Shivaji Nagar, Secunderabad, Telangana 500003",
+      "CLICK Here(maps): Financial District, Nanakramguda, Hyderabad, Telangana 500032",
+      "CLICK Here(maps): 1-112 / 86, Survey No 5 / EE, beside Union Bank, near RTA Office, Kondapur, Telangana 500084"
+    ];
+    return details[index];
+  }
+
+  List<LatLng> getHospitalLocations() {
+    return [
+      LatLng(17.415597946043818,
+          78.41282706869062), // Apollo Hospitals, Jubilee Hills
+      LatLng(17.412889287173705,
+          78.45023296684334), // Care Hospitals, Banjara Hills
+      LatLng(17.441969329824037,
+          78.49712479567914), // Yashoda Hospitals, Secunderabad
+      LatLng(17.41753954787001,
+          78.33938422451398), // Continental Hospitals, Nanakramguda
+      LatLng(17.466517669187308, 78.3678987091736), // KIMS Hospitals, Kondapur
+    ];
   }
 
   void _loadModePreference() async {
@@ -911,6 +1068,7 @@ class _HomeState extends State<Home> {
                                 'longitude': currentLocation.longitude
                               },
                               'selectedOptions': selectedHelp,
+                              'phonenumber': phoneNumber,
                             });
 
                             // If phoneNumber is available and not empty, include it in the data

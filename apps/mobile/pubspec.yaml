@@ -10,8 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
   # flutter_blue: ^0.8.0
+  twilio_flutter: ^0.3.0
   get: ^4.1.4
   protobuf: ^2.1.0
+  shake: ^2.2.0 
 
   cupertino_icons: ^1.0.2
   flutter_config:
@@ -35,7 +37,7 @@ dependencies:
   firebase_core: 
   firebase_auth:
   cloud_firestore:
-  flutter_blue:
+  firebase_database:
   uuid:
 
 
