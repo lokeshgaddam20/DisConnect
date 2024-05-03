@@ -61,7 +61,7 @@ class _ChatScreenState extends State<ChatScreen> {
             CircleAvatar(
               backgroundColor: Colors.white,
               radius: 18,
-              backgroundImage: NetworkImage(widget.member.avatarUrl),
+              // backgroundImage: NetworkImage(widget.member.avatarUrl),
             ),
             const SizedBox(width: 12),
             Text(widget.member.name),
@@ -124,8 +124,8 @@ class _ChatScreenState extends State<ChatScreen> {
                         return CircleAvatar(
                           backgroundColor: Colors.white,
                           radius: 20,
-                          backgroundImage:
-                              NetworkImage(widget.member.avatarUrl),
+                          // backgroundImage:
+                          //     NetworkImage(widget.member.avatarUrl),
                         );
                       },
                     ),
