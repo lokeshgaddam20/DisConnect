@@ -16,11 +16,13 @@ import 'Family.dart';
 class CustomNavigationBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemTapped;
+  final Color primaryColor;
 
   CustomNavigationBar({
     Key? key,
     required this.selectedIndex,
     required this.onItemTapped,
+    required this.primaryColor,
   }) : super(key: key);
 
   @override
@@ -29,6 +31,7 @@ class CustomNavigationBar extends StatelessWidget {
       selectedIndex: selectedIndex,
       onDestinationSelected: onItemTapped,
       backgroundColor: Colors.white,
+      indicatorColor: primaryColor,
       destinations: [
         NavigationDestination(
           icon: Icon(Icons.home_outlined),
@@ -75,13 +78,28 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   int _selectedIndex = 0;
+  MaterialColor customColor = MaterialColor(
+    0xFFFA7979,
+    <int, Color>{
+      50: Color(0xFFFFF3F3),
+      100: Color(0xFFFFE0E0),
+      200: Color(0xFFFFB3B3),
+      300: Color(0xFFFF8080),
+      400: Color(0xFFFF6666),
+      500: Color(0xFFFA7979), // Your primary color
+      600: Color(0xFFFA6666),
+      700: Color(0xFFFA4D4D),
+      800: Color(0xFFFA3333),
+      900: Color(0xFFFA1A1A),
+    },
+  );
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'DisConnect',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: customColor,
       ),
       debugShowCheckedModeBanner: false,
       home: Scaffold(
@@ -98,6 +116,7 @@ class _MyAppState extends State<MyApp> {
                 ? CustomNavigationBar(
                     selectedIndex: _selectedIndex,
                     onItemTapped: _onItemTapped,
+                    primaryColor: customColor,
                   )
                 : null,
       ),
