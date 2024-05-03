@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   # flutter_blue: ^0.8.0
   twilio_flutter: ^0.3.0
+  fl_chart: ^0.67.0
   get: ^4.1.4
   protobuf: ^2.1.0
   shake: ^2.2.0 

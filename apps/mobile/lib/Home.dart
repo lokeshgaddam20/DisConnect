@@ -233,6 +233,7 @@ class _HomeState extends State<Home> {
       Map<String, dynamic> firestoreDoc = {
         'location': selection['location'],
         'selectedOptions': selection['selectedOptions'],
+        'phonenumber': selection['phonenumber'],
         // Add any additional fields you want to store
       };
 
@@ -1067,6 +1068,7 @@ class _HomeState extends State<Home> {
                                 'longitude': currentLocation.longitude
                               },
                               'selectedOptions': selectedHelp,
+                              'phonenumber': phoneNumber,
                             });
 
                             // If phoneNumber is available and not empty, include it in the data

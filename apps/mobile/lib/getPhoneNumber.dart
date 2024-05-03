@@ -41,113 +41,120 @@ class _GetPhoneNumberState extends State<GetPhoneNumber> {
             child: Padding(
               padding: EdgeInsets.symmetric(
                   horizontal: MediaQuery.of(context).size.width * 0.125),
-              child: Column(
-                children: [
-                  SizedBox(height: 85),
-                  Image.asset(
-                    "assets/icon/icon.png",
-                    height: 140,
-                  ),
-                  Text("D I S C O N N E C T",
-                      style: GoogleFonts.getFont('Lexend',
-                          fontWeight: FontWeight.w700, fontSize: 23)),
-                  SizedBox(height: 59),
-                  Container(
-                    // padding: EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                    width: MediaQuery.of(context).size.width * 0.75,
-                    decoration: BoxDecoration(
-                        // border: Border.all(width: 1, color: Colors.black),
-                        // borderRadius: BorderRadius.circular(15),
-                        ),
-                    child: Column(
-                      children: [
-                        IntlPhoneField(
-                          keyboardType: TextInputType.phone,
-                          decoration: InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(
-                                  vertical: 20, horizontal: 20),
-                              counter: Offstage(),
-                              labelText: '  Phone Number',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                    color: Colors.red, width: 3.0),
-                                // borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderSide: const BorderSide(
-                                    color: Colors.black, width: 2.0),
-                                borderRadius: BorderRadius.circular(12.0),
-                              )),
-                          initialCountryCode: initialCountry,
-                          showDropdownIcon: true,
-                          dropdownIconPosition: IconPosition.leading,
-                          onChanged: (phone) {
-                            setState(() {
-                              // buttonEnabled = phone.number.length >= 10;
-                              buttonEnabled = phone.completeNumber.length >= 10;
-                            });
-                          },
-                          controller: controller,
-                        ),
-                        SizedBox(height: 20),
-                        _buildTextField(
-                          label: 'Name',
-                          controller: nameController,
-                          keyboardType: TextInputType.text,
-                        ),
-                        SizedBox(width: 20),
-                      ],
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    SizedBox(height: 85),
+                    Image.asset(
+                      "assets/icon/icon.png",
+                      height: 140,
                     ),
-                  ),
-                  SizedBox(height: 18),
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.75,
-                    height: 60,
-                    child: ElevatedButton(
-                      onPressed: buttonEnabled
-                          ? () async {
-                              final prefs =
-                                  await SharedPreferences.getInstance();
-                              prefs.setString('phoneNumber', controller.text);
-                              final String userKey = generateUserKey();
-
-                              await firestore
-                                  .collection('users')
-                                  .doc(userKey)
-                                  .set({
-                                'name': nameController.text,
-                                'phoneNumber': controller.text,
+                    Text("D I S C O N N E C T",
+                        style: GoogleFonts.getFont('Lexend',
+                            fontWeight: FontWeight.w700, fontSize: 23)),
+                    SizedBox(height: 59),
+                    Container(
+                      // padding: EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                      width: MediaQuery.of(context).size.width * 0.75,
+                      decoration: BoxDecoration(
+                          // border: Border.all(width: 1, color: Colors.black),
+                          // borderRadius: BorderRadius.circular(15),
+                          ),
+                      child: Column(
+                        children: [
+                          IntlPhoneField(
+                            keyboardType: TextInputType.phone,
+                            decoration: InputDecoration(
+                                contentPadding: EdgeInsets.symmetric(
+                                    vertical: 20, horizontal: 20),
+                                counter: Offstage(),
+                                labelText: '  Phone Number',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                      color: Colors.red, width: 3.0),
+                                  // borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: const BorderSide(
+                                      color: Colors.black, width: 2.0),
+                                  borderRadius: BorderRadius.circular(12.0),
+                                )),
+                            initialCountryCode: initialCountry,
+                            showDropdownIcon: true,
+                            dropdownIconPosition: IconPosition.leading,
+                            onChanged: (phone) {
+                              setState(() {
+                                // buttonEnabled = phone.number.length >= 10;
+                                buttonEnabled =
+                                    phone.completeNumber.length >= 10;
                               });
-
-                              Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(
-                                    builder: (context) => GetPermissions()),
-                              );
-                            }
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          )),
-                      child: Text(
-                        'Submit',
-                        style: GoogleFonts.getFont('Kanit',
-                            fontSize: 18, color: Colors.white),
+                            },
+                            controller: controller,
+                          ),
+                          SizedBox(height: 20),
+                          _buildTextField(
+                            label: 'Name',
+                            controller: nameController,
+                            keyboardType: TextInputType.text,
+                          ),
+                          SizedBox(width: 20),
+                        ],
                       ),
                     ),
-                  ),
-                  Spacer(),
-                  TextButton(
-                      onPressed: (() => {}),
-                      child: Text("Terms & Conditions",
-                          // style: TextStyle(color: Colors.grey),
-                          style: GoogleFonts.getFont('JetBrains Mono',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: Colors.grey)))
-                ],
+                    SizedBox(height: 18),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.75,
+                      height: 60,
+                      child: ElevatedButton(
+                        onPressed: buttonEnabled
+                            ? () async {
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                prefs.setString('phoneNumber', controller.text);
+                                String? userKey = generateUserKey();
+                                // String? phoneNumber = controller.text;
+                                // SharedPreferences prefs =
+                                //     await SharedPreferences.getInstance();
+                                // userKey = prefs.setString('userKey', userkey);
+
+                                await firestore
+                                    .collection('users')
+                                    .doc(userKey)
+                                    .set({
+                                  'name': nameController.text,
+                                  'phoneNumber': controller.text,
+                                });
+
+                                Navigator.of(context).pushReplacement(
+                                  MaterialPageRoute(
+                                      builder: (context) => GetPermissions()),
+                                );
+                              }
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            )),
+                        child: Text(
+                          'Submit',
+                          style: GoogleFonts.getFont('Kanit',
+                              fontSize: 18, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    Spacer(),
+                    TextButton(
+                        onPressed: (() => {}),
+                        child: Text("Terms & Conditions",
+                            // style: TextStyle(color: Colors.grey),
+                            style: GoogleFonts.getFont('JetBrains Mono',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: Colors.grey)))
+                  ],
+                ),
               ),
             ),
           ),
