@@ -1,11 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 
 import 'ChatScreen.dart';
 import 'FamilyMember.dart';
@@ -18,141 +16,94 @@ class FamilySpaceScreen extends StatefulWidget {
 class _FamilySpaceScreenState extends State<FamilySpaceScreen> {
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
-  List<FamilyMember> _familyMembers =
-      []; // Family members retrieved from Firestore
 
   @override
   void initState() {
     super.initState();
-    _getUserLocation();
-    _getFamilyMembers(); // Retrieve family members from Firestore
+    _fetchUsers();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-            child: GoogleMap(
-              onMapCreated: (GoogleMapController controller) {
-                _mapController = controller;
-              },
-              initialCameraPosition: CameraPosition(
-                target: LatLng(37.7749, -122.4194),
-                zoom: 12,
-              ),
-              markers: _markers,
-              zoomControlsEnabled: false,
-            ),
-          ),
-          Expanded(
-            child: FamilyList(),
-          ),
-        ],
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton(
-            onPressed: () async {
-              final position = await Geolocator.getCurrentPosition(
-                desiredAccuracy: LocationAccuracy.high,
-              );
-              final currentLocation =
-                  LatLng(position.latitude, position.longitude);
-              setState(() {
-                _markers.add(Marker(
-                  markerId: MarkerId('currentLocation'),
-                  position: currentLocation,
-                  infoWindow: InfoWindow(title: 'You'),
-                ));
-              });
-              _mapController?.animateCamera(
-                CameraUpdate.newCameraPosition(
-                  CameraPosition(
-                    target: currentLocation,
-                    zoom: 14,
-                  ),
-                ),
-              );
-              // Save current location to Firestore
-              _saveUserLocation(currentLocation);
-            },
-            child: Icon(Icons.location_on),
-          ),
-          SizedBox(
-              height: 10), // Add some space between the FloatingActionButtons
-          FloatingActionButton(
-            onPressed: () {
-              _showAddMemberDialog();
-            },
-            child: Icon(Icons.add),
-          ),
-        ],
-      ),
-    );
-  }
+  Future<void> _addUser(String phoneNumber, String name) async {
+    // Create a new document in the "familyspace" collection with the phone number
+    await _firestore.collection('familyspace').doc(phoneNumber).set({
+      'phoneNumber': phoneNumber,
+      'name': name,
+      // Add any other user details here, like title or name
+    });
 
-  void _showAddMemberDialog() {
-    TextEditingController _phoneNumberController = TextEditingController();
+    // Get the user's location from the "users" collection
+    DocumentSnapshot userSnapshot =
+        await _firestore.collection('users').doc(phoneNumber).get();
+    if (userSnapshot.exists) {
+      Map<String, dynamic>? userData =
+          userSnapshot.data() as Map<String, dynamic>?;
+      double latitude = userData?['latitude'] ?? 0.0;
+      double longitude = userData?['longitude'] ?? 0.0;
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Add Family Member'),
-          content: TextField(
-            controller: _phoneNumberController,
-            decoration: InputDecoration(
-              hintText: 'Enter phone number',
-            ),
+      // Add the user to the _users list
+      setState(() {
+        _users.add(
+          User(
+            title: name, // Replace with the actual title or name
+            phoneNumber: phoneNumber,
+            latitude: latitude,
+            longitude: longitude,
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                String phoneNumber = _phoneNumberController.text.trim();
-                if (phoneNumber.isNotEmpty) {
-                  _addFamilyMember(phoneNumber);
-                }
-                Navigator.pop(context);
-              },
-              child: Text('Add'),
-            ),
-          ],
         );
-      },
-    );
+      });
+    }
+
+    // After adding the user, update the UI
+    _fetchUsers();
   }
 
-  void _addFamilyMember(String phoneNumber) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Added family member: $phoneNumber'),
-        backgroundColor: Color.fromARGB(255, 250, 121, 121),
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.all(30),
-        elevation: 10,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15.0),
-        ),
-        action: SnackBarAction(
-          label: 'Dismiss',
-          disabledTextColor: Colors.white,
-          textColor: Colors.white,
-          onPressed: () {
-            //Do whatever you want
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          },
-        ),
-      ),
-    );
+  Future<void> _fetchUsers() async {
+    // Clear the existing _users list
+    _users.clear();
+
+    // Listen to the "familyspace" collection and fetch user phone numbers
+    QuerySnapshot querySnapshot =
+        await _firestore.collection('familyspace').get();
+
+    // For each phone number, fetch user location from the "users" collection
+    for (QueryDocumentSnapshot doc in querySnapshot.docs) {
+      // Get the user's location from the "users" collection
+      String phoneNumber = doc['phoneNumber'];
+      DocumentSnapshot userSnapshot =
+          await _firestore.collection('users').doc(phoneNumber).get();
+
+      if (userSnapshot.exists) {
+        Map<String, dynamic>? userData =
+            userSnapshot.data() as Map<String, dynamic>?;
+        double latitude = userData?['latitude'] ?? 0.0;
+        double longitude = userData?['longitude'] ?? 0.0;
+        String name = userData?['name'] ?? 'default';
+
+        // Add the user to the _users list
+        setState(() {
+          _users.add(
+            User(
+              title: name,
+              phoneNumber: phoneNumber,
+              latitude: latitude,
+              longitude: longitude,
+            ),
+          );
+        });
+
+        // Add a marker to the map for the user's location
+        _markers.add(
+          Marker(
+            markerId: MarkerId(phoneNumber),
+            position: LatLng(latitude, longitude),
+            infoWindow: InfoWindow(
+              title: name,
+              snippet: phoneNumber,
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _getUserLocation() async {
@@ -177,244 +128,356 @@ class _FamilySpaceScreenState extends State<FamilySpaceScreen> {
     );
   }
 
-  // Save user's phone number and current location to Firestore
-  void _saveUserLocation(LatLng currentLocation) async {
-    final prefs = await SharedPreferences.getInstance();
-    String phoneNumber = prefs.getString('phoneNumber') ?? 'UniqueNUmber';
-    FirebaseFirestore.instance
-        .collection('familyspace')
-        .doc(phoneNumber) // Use user's phone number as document ID
-        .set({
-      'phoneNumber': phoneNumber, // Change to actual user's phone number
-      'location': GeoPoint(currentLocation.latitude, currentLocation.longitude),
-    });
-  }
+  Future<void> _showAddUserDialog() async {
+    String? phoneNumber;
+    String? name;
 
-  // Retrieve family members' data from Firestore
-  void _getFamilyMembers() async {
-    final prefs = await SharedPreferences.getInstance();
-    String phoneNumber = prefs.getString('phoneNumber') ?? 'UniqueNUmber';
-
-    FirebaseFirestore.instance
-        .collection('familyspace')
-        .get()
-        .then((QuerySnapshot querySnapshot) {
-      querySnapshot.docs.forEach((doc) {
-        if (doc.id != phoneNumber) {
-          _addOrUpdateMarker(
-              doc); // Add or update marker for each family member
-        }
-      });
-    });
-
-    FirebaseFirestore.instance
-        .collection('familyspace')
-        .snapshots()
-        .listen((QuerySnapshot querySnapshot) {
-      querySnapshot.docChanges.forEach((change) {
-        if (change.type == DocumentChangeType.added ||
-            change.type == DocumentChangeType.modified) {
-          // Check if the added/modified document is a family member
-          if (change.doc.id != phoneNumber) {
-            // Exclude current user
-            _addOrUpdateMarker(change.doc);
-          }
-        }
-        if (change.type == DocumentChangeType.removed) {
-          // Remove marker if a family member is removed
-          _removeMarker(change.doc.id);
-        }
-      });
-    });
-  }
-
-  void _addOrUpdateMarker(DocumentSnapshot document) {
-    final location = document['location'] as GeoPoint;
-    final markerId = MarkerId(document.id);
-
-    setState(() {
-      _markers.removeWhere((marker) => marker.markerId == markerId);
-      _markers.add(
-        Marker(
-          markerId: markerId,
-          position: LatLng(location.latitude, location.longitude),
-          infoWindow: InfoWindow(title: document['phoneNumber']),
-        ),
-      );
-    });
-  }
-
-  void _removeMarker(String documentId) {
-    setState(() {
-      _markers.removeWhere((marker) => marker.markerId.value == documentId);
-    });
-  }
-}
-
-class FamilyList extends StatefulWidget {
-  const FamilyList({Key? key}) : super(key: key);
-
-  @override
-  State<FamilyList> createState() => _FamilyListState();
-}
-
-class _FamilyListState extends State<FamilyList> {
-  Set<Marker> _markers = {};
-  @override
-  Widget build(BuildContext context) {
-    final phoneNumber = _getPhoneNumber();
-    final familySpaceStream =
-        FirebaseFirestore.instance.collection('familyspace').snapshots();
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: familySpaceStream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-
-        final familyMembers = _extractFamilyMembers(snapshot, phoneNumber);
-
-        return Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ListView.builder(
-            itemCount: familyMembers.length,
-            itemBuilder: (context, index) {
-              final member = familyMembers[index];
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0), // Add padding to ListTile
-                  child: ListTile(
-                    title: Text(
-                      member.name,
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold), // Make title bold
-                    ),
-                    subtitle: Text('${member.distance} miles away'),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChatScreen(
-                            member: member,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Add User'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Enter name',
                 ),
-              );
-            },
+                onChanged: (value) {
+                  name = value;
+                },
+              ),
+              SizedBox(height: 16.0),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Enter phone number',
+                ),
+                onChanged: (value) {
+                  phoneNumber = value;
+                },
+              ),
+            ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // if (phoneNumber != null &&
+                //     phoneNumber.isNotEmpty &&
+                //     name != null &&
+                //     name.isNotEmpty) {
+                _addUser(name!, phoneNumber!);
+                Navigator.pop(context);
+                // }
+              },
+              child: Text('Add'),
+            ),
+          ],
         );
       },
     );
   }
 
-  Future<String?> _getPhoneNumber() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('phoneNumber');
-  }
-
-  List<FamilyMember> _extractFamilyMembers(
-      AsyncSnapshot<QuerySnapshot> snapshot, Future<String?> phoneNumber) {
-    final List<FamilyMember> familyMembers = [];
-
-    snapshot.data!.docs.forEach((doc) {
-      if (doc.id != phoneNumber) {
-        final data = doc.data() as Map<String, dynamic>;
-        final location = data['location'] as GeoPoint;
-        // final double distance = await calculateDistance(location);
-        final member = FamilyMember(
-          name: data['phoneNumber'] ?? '',
-          distance: 0,
-          //       distance: Geolocator.distanceBetween(
-          //   startLatitude,
-          //   startLongitude,
-          //   endLatitude,
-          //   endLongitude,
-          // );, // You can calculate distance if needed
-        );
-        familyMembers.add(member);
-        // _addOrUpdateMarker(doc);
-      }
-    });
-
-    return familyMembers;
-  }
-
-  Future<double> calculateDistance(GeoPoint locationDetails) async {
-    Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: [
+          Expanded(
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: LatLng(37.7749, -122.4194), // Initial map position
+                zoom: 14.0,
+              ),
+              onMapCreated: (GoogleMapController controller) {
+                _mapController = controller;
+              },
+              markers: _markers,
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _users.length,
+              itemBuilder: (context, index) {
+                final user = _users[index];
+                return Card(
+                  child: ListTile(
+                    title: Text(user.title),
+                    subtitle: Text(user.phoneNumber),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: _getCurrentLocation,
+            child: Icon(Icons.my_location),
+          ),
+          SizedBox(height: 16.0),
+          FloatingActionButton(
+            onPressed: () {
+              // Show a modal dialog or navigate to a new screen to add a user
+              _showAddUserDialog();
+            },
+            child: Icon(Icons.add),
+          ),
+        ],
+      ),
     );
-    LatLng currentLocation = LatLng(position.latitude, position.longitude);
-    // locationLoaded = true;
-    // currentCameraPosition =
-    //     CameraPosition(target: currentLocation, zoom: 15.0);
-    final double startLatitude = currentLocation.latitude;
-    final double startLongitude = currentLocation.longitude;
-
-    final double endLatitude = locationDetails.latitude;
-    final double endLongitude = locationDetails.longitude;
-    double distanceInMeters = Geolocator.distanceBetween(
-      startLatitude,
-      startLongitude,
-      endLatitude,
-      endLongitude,
-    );
-    // Convert distance from meters to kilometers
-    double distanceInKm = distanceInMeters / 1000;
-    return distanceInKm;
   }
-
-  // Future<void> getDistances(List<Map<String, double>> origins,
-  //     List<Map<String, double>> destinations) async {
-  //   final apiKey = 'YOUR_API_KEY'; // Replace with your Google Maps API key
-  //   final url = Uri.parse(
-  //       'https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix');
-
-  //   final requestBody = {
-  //     'origins': origins
-  //         .map((origin) => {
-  //               'waypoint': {
-  //                 'location': {'latLng': origin}
-  //               },
-  //               'routeModifiers': {'avoid_ferries': true},
-  //             })
-  //         .toList(),
-  //     'destinations': destinations
-  //         .map((destination) => {
-  //               'waypoint': {
-  //                 'location': {'latLng': destination}
-  //               },
-  //             })
-  //         .toList(),
-  //     'travelMode': 'DRIVE',
-  //     'routingPreference': 'TRAFFIC_AWARE',
-  //   };
-
-  //   final headers = {
-  //     'Content-Type': 'application/json',
-  //     'X-Goog-Api-Key': apiKey,
-  //     'X-Goog-FieldMask':
-  //         'originIndex,destinationIndex,duration,distanceMeters,status,condition',
-  //   };
-
-  //   final response = await http.post(
-  //     url,
-  //     headers: headers,
-  //     body: json.encode(requestBody),
-  //   );
-
-  //   if (response.statusCode == 200) {
-  //     final List<dynamic> data = json.decode(response.body);
-  //     // Process the response data to get distance information
-  //     // Example: data[0]['distanceMeters'] contains the distance in meters for the first origin-destination pair
-  //   } else {
-  //     throw Exception('Failed to fetch distance: ${response.statusCode}');
-  //   }
-  // }
 }
+
+class User {
+  final String title;
+  final String phoneNumber;
+  final double latitude;
+  final double longitude;
+
+  User({
+    required this.title,
+    required this.phoneNumber,
+    required this.latitude,
+    required this.longitude,
+  });
+}
+
+  // void _listenForLocationUpdates() {
+  //   CollectionReference usersRef =
+  //       FirebaseFirestore.instance.collection('usersLoc');
+
+  //   usersRef.snapshots().listen((snapshot) {
+  //     snapshot.docs.forEach((doc) {
+  //       var userId = doc.id;
+  //       var location = doc['location'];
+
+  //       if (location != null) {
+  //         double? latitude = location.latitude;
+  //         double? longitude = location.longitude;
+
+  //         if (latitude != null && longitude != null) {
+  //           // Update marker for the corresponding user
+  //           _updateMarker(userId, LatLng(latitude, longitude));
+  //         }
+  //       }
+  //     });
+  //   });
+  // }
+
+  // void _updateMarker(String userId, LatLng location) {
+  //   setState(() {
+  //     // Remove existing marker for the user
+  //     _markers.removeWhere((marker) => marker.markerId.value == userId);
+
+  //     // Add new marker for the user
+  //     _markers.add(Marker(
+  //       markerId: MarkerId(userId),
+  //       position: location,
+  //       // You can customize the marker icon here if needed
+  //     ));
+  //   });
+  // }
+
+// class FamilySpaceScreen extends StatefulWidget {
+//   @override
+//   _FamilySpaceScreenState createState() => _FamilySpaceScreenState();
+// }
+
+// class _FamilySpaceScreenState extends State<FamilySpaceScreen> {
+//   GoogleMapController? _mapController;
+//   Set<Marker> _markers = {};
+//   Set<Marker> _familyMemberMarkers = {};
+//   List<FamilyMember> _familyMembers = [
+//     FamilyMember(
+//       name: 'Alice',
+//       distance: 1.2,
+//       avatarUrl: 'assets/icon/icon.png',
+//       // markerIcon: 'maps/markers/family.png'
+//     ),
+//     FamilyMember(
+//       name: 'Bob',
+//       distance: 2.3,
+//       avatarUrl: 'assets/icon/icon.png',
+//       // markerIcon: 'maps/markers/family.png'
+//     ),
+//     FamilyMember(
+//       name: 'Charlie',
+//       distance: 3.4,
+//       avatarUrl: 'assets/icon/icon.png',
+//       // markerIcon: 'maps/markers/family.png'
+//     ),
+//   ];
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _getUserLocation();
+//     // _getMarkerIcon();
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: Text('Family Space')),
+//       body: Column(
+//         children: [
+//           Expanded(
+//             child: GoogleMap(
+//               onMapCreated: (GoogleMapController controller) {
+//                 _mapController = controller;
+//               },
+//               initialCameraPosition: CameraPosition(
+//                 target: LatLng(37.7749, -122.4194),
+//                 zoom: 12,
+//               ),
+//               markers: _markers,
+//               zoomControlsEnabled: false,
+//             ),
+//           ),
+//           Expanded(
+//             child: ListView.builder(
+//               itemCount: _familyMembers.length,
+//               physics: BouncingScrollPhysics(),
+//               itemBuilder: (context, index) {
+//                 final member = _familyMembers[index];
+//                 return Card(
+//                   child: ListTile(
+//                     leading: CircleAvatar(
+//                       child: Text(member.name[0]),
+//                     ),
+//                     title: Text(member.name),
+//                     subtitle: Text('${member.distance} miles away'),
+//                     onTap: () {
+//                       Navigator.push(
+//                         context,
+//                         MaterialPageRoute(
+//                           builder: (context) => ChatScreen(
+//                             member: member,
+//                           ),
+//                         ),
+//                       );
+//                     },
+//                   ),
+//                 );
+//               },
+//             ),
+//           ),
+//         ],
+//       ),
+//       floatingActionButton: FloatingActionButton(
+//         onPressed: () async {
+//           final position = await Geolocator.getCurrentPosition(
+//             desiredAccuracy: LocationAccuracy.high,
+//           );
+//           final currentLocation = LatLng(position.latitude, position.longitude);
+//           setState(() {
+//             _markers.add(Marker(
+//               markerId: MarkerId('currentLocation'),
+//               position: currentLocation,
+//               infoWindow: InfoWindow(title: 'You'),
+//             ));
+//           });
+//           _mapController?.animateCamera(
+//             CameraUpdate.newCameraPosition(
+//               CameraPosition(
+//                 target: currentLocation,
+//                 zoom: 14,
+//               ),
+//             ),
+//           );
+//         },
+//         child: Icon(Icons.location_on),
+//       ),
+//     );
+//   }
+
+//   Future<void> _getUserLocation() async {
+//     final position = await Geolocator.getCurrentPosition(
+//       desiredAccuracy: LocationAccuracy.high,
+//     );
+//     final currentLocation = LatLng(position.latitude, position.longitude);
+//     setState(() {
+//       _markers.add(Marker(
+//         markerId: MarkerId('currentLocation'),
+//         position: currentLocation,
+//         infoWindow: InfoWindow(title: 'You'),
+//       ));
+//     });
+//     _mapController?.animateCamera(
+//       CameraUpdate.newCameraPosition(
+//         CameraPosition(
+//           target: currentLocation,
+//           zoom: 14,
+//         ),
+//       ),
+//     );
+
+//     _getRandomMarkers();
+//   }
+
+//   void _getRandomMarkers() {
+//     _familyMemberMarkers.clear(); // Clear previous markers
+
+//     for (int index = 0; index < _familyMembers.length; index++) {
+//       final familyMember = _familyMembers[index];
+//       final double latOffset = (familyMember.distance / 100) *
+//           Random().nextDouble() *
+//           (Random().nextBool() ? 1 : -1);
+//       final double lngOffset = (familyMember.distance / 100) *
+//           Random().nextDouble() *
+//           (Random().nextBool() ? 1 : -1);
+//       final position = LatLng(
+//         _markers.first.position.latitude + latOffset,
+//         _markers.first.position.longitude + lngOffset,
+//       );
+
+//       // final markerIcon = _getMarkerIcon();
+
+//       _familyMemberMarkers.add(
+//         Marker(
+//           markerId: MarkerId('familyMember$index'),
+//           position: position,
+//           // icon: markerIcon,
+//           infoWindow: InfoWindow(title: familyMember.name),
+//         ),
+//       );
+//     }
+
+//     setState(() {
+//       _markers.addAll(_familyMemberMarkers);
+//     });
+
+//     // _adjustMapBounds();
+//   }
+
+//   // _getMarkerIcon() {
+//   //   final bitmap = BitmapDescriptor.fromAssetImage(
+//   //     ImageConfiguration.empty,
+//   //     "assets/maps/markers/family.png",
+//   //   );
+//   //   return bitmap;
+//   // }
+
+//   // void _adjustMapBounds() {
+//   //   if (_mapController == null || _markers.isEmpty) return;
+
+//   //   final bounds = _markers.fold<LatLngBounds?>(null, (bounds, marker) {
+//   //     return bounds?.extend(marker.position) ??
+//   //         LatLngBounds(southwest: marker.position, northeast: marker.position);
+//   //   });
+
+//   //   if (bounds != null) {
+//   //     _mapController?.animateCamera(
+//   //       CameraUpdate.newLatLngBounds(bounds, 100),
+//   //     );
+//   //   }
+//   // }
+// }

@@ -6,7 +6,6 @@ import 'firebase_options.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'Family.dart';
 import 'getPhoneNumber.dart';
 import 'getPermissions.dart';
 import 'Home.dart';
@@ -44,9 +43,9 @@ class CustomNavigationBar extends StatelessWidget {
           label: 'Weather',
         ),
         NavigationDestination(
-          icon: Icon(Icons.family_restroom_outlined),
+          icon: Icon(Icons.chat_outlined), // Added chat icon here
           selectedIcon: Icon(Icons.family_restroom),
-          label: 'Family',
+          label: 'Chat',
         ),
         //<------------------ADD MORE OPTIONS AS NEEDED----------------->
       ],
@@ -108,6 +107,7 @@ class _MyAppState extends State<MyApp> {
           children: [
             widget.phoneNumber == null ? GetPhoneNumber() : Home(),
             widget.permissionsGranted ? WeatherScreen() : GetPermissions(),
+            widget.permissionsGranted ? FamilySpaceScreen() : GetPermissions(),
             //<------------------ADD MORE OPTIONS AS NEEDED----------------->
           ],
         ),
